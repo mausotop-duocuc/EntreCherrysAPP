@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function App() {
   const [cart, setCart] = useState([]);
@@ -8,6 +8,20 @@ function App() {
   const [toastMessage, setToastMessage] = useState('');
   const [fechaEntrega, setFechaEntrega] = useState('');
   const [faqAbierto, setFaqAbierto] = useState(null);
+  const [productos, setProductos] = useState([]);
+const [cargando, setCargando] = useState(true);
+const [error, setError] = useState(null);
+useEffect(() => {
+    fetch('http://localhost:5000/api/productos')
+      .then((res) => res.json())
+      .then((data) => {
+        console.log('Productos cargados desde API:', data);
+        if (Array.isArray(data)) {
+          setProductos(data);
+        }
+      })
+      .catch((err) => console.error('Error al conectar con la API:', err));
+  }, []);
   
   // Estado para el modal de personalización
   const [productoPersonalizando, setProductoPersonalizando] = useState(null);
@@ -21,41 +35,7 @@ function App() {
   const PHONE_NUMBER = "56912345678"; 
   const INSTAGRAM_USERNAME = "entrecherrys";
 
-  const productos = [
-    // --- TORTAS (Rutas desde la carpeta public/) ---
-    { 
-      id: 3, 
-      nombre: "Torta Personalizada (15 Porciones)", 
-      categoria: "tortas", 
-      precio: 28000, 
-      descripcion: "Bizcocho húmedo con relleno a elección y decoración artesanal con cerezas de la casa.", 
-      imagen: "/torta-tradicional.jpg", 
-      opcionesRelleno: ["Manjar / LÚCUMA / Nuez", "Chocolate / Frambuesa", "Tres Leches Tradicional", "Crema Chantilly / Frutilla"], 
-      popular: true 
-    },
-    { 
-      id: 4, 
-      nombre: "Torta Especial Eventos Premium", 
-      categoria: "tortas", 
-      precio: 45000, 
-      descripcion: "Torta gourmet con cubierta fina de chocolate, frutos rojos y cerezas seleccionadas.", 
-      imagen: "/torta-eventos.jpg", 
-      opcionesRelleno: ["Manjar / LÚCUMA / Nuez", "Chocolate / Frambuesa", "Nutella / Oreo", "Crema Pastelera / Durazno"],
-      popular: true
-    },
-
-    // --- AMIGURUMIS ---
-    { id: 1, nombre: "Oso Tejido Tradicional", categoria: "amigurumi", precio: 15000, descripcion: "Oso clásico tejido a mano con hilo de algodón 100% hipoalergénico y relleno suave.", imagen: "https://images.unsplash.com/photo-1558679908-541bcf1249ff?auto=format&fit=crop&q=80&w=400", popular: true },
-    { id: 5, nombre: "Conejita de Apego Floral", categoria: "amigurumi", precio: 16500, descripcion: "Conejita suave ideal para bebés con detalles bordados a mano y vestido removible.", imagen: "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&q=80&w=400" },
-    { id: 6, nombre: "Gatito Amigurumi Curioso", categoria: "amigurumi", precio: 14000, descripcion: "Adorable gatito tejido con bufanda personalizable del color que prefieras.", imagen: "https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&q=80&w=400" },
-    { id: 7, nombre: "Zorrito del Bosque Crochet", categoria: "amigurumi", precio: 17000, descripcion: "Simpático zorro color terracota tejido con finas terminaciones artesanales.", imagen: "https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&q=80&w=400" },
-    { id: 8, nombre: "Muñeca 'Cerecita' Personalizada", categoria: "amigurumi", precio: 22000, descripcion: "Muñeca tejida a mano con peinado y ropa a elección. Un recuerdo eterno.", imagen: "https://images.unsplash.com/photo-1581557991964-125469da3b8a?auto=format&fit=crop&q=80&w=400", popular: true },
-    { id: 9, nombre: "Perrito Corgi Mini", categoria: "amigurumi", precio: 13500, descripcion: "Tierno perrito compacto de 15 cm perfecto para escritorios o repisas.", imagen: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=400" },
-    { id: 10, nombre: "Dinosaurio T-Rex Kawaii", categoria: "amigurumi", precio: 18000, descripcion: "Dinosaurio verde en estilo amigurumi supersuave con ojos de seguridad.", imagen: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&q=80&w=400" },
-    
-    // --- ROPA ---
-    { id: 2, nombre: "Polerón Personalizado Entre Cherrys", categoria: "ropa", precio: 22000, descripcion: "Polerón de franela bordado a mano con diseño exclusivo.", imagen: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=80&w=400" }
-  ];
+  
 
   const testimonios = [
     { id: 1, nombre: "Camila R.", comentario: "La torta de cumpleaños quedó hermosa y exquisita. ¡Súper detallistas!", estrellas: 5, producto: "Torta Personalizada" },
@@ -210,29 +190,30 @@ function App() {
         </div>
       </section>
 
-      {/* FILTROS DE CATEGORÍA */}
-      <section className="max-w-6xl mx-auto px-4 mt-8">
-        <div className="flex flex-wrap justify-center gap-2">
-          {[
-            { id: 'todos', label: '✨ Todos los Productos', count: productos.length },
-            { id: 'amigurumi', label: '🧶 Amigurumis Tejidos', count: 7 },
-            { id: 'tortas', label: '🎂 Tortas Personalizadas', count: 2 },
-            { id: 'ropa', label: '👕 Vestuario', count: 1 }
-          ].map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setCategoria(cat.id)}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition shadow-sm border ${
-                categoria === cat.id
-                  ? 'bg-rose-600 text-white border-rose-600 shadow-rose-200 scale-105'
-                  : 'bg-white text-gray-600 border-rose-100 hover:bg-rose-50'
-              }`}
-            >
-              {cat.label} ({cat.count})
-            </button>
-          ))}
-        </div>
-      </section>
+  {/* FILTROS DE CATEGORÍA */}
+<section className="max-w-6xl mx-auto px-4 mt-8">
+  <div className="flex flex-wrap justify-center gap-2">
+    {[
+      { id: 'todos', label: '✨ Todos los Productos', count: productos.length },
+      { id: 'amigurumi', label: '🧶 Amigurumis', count: productos.filter(p => p.categoria?.toLowerCase() === 'amigurumi').length },
+      { id: 'tortas', label: '🎂 Tortas', count: productos.filter(p => p.categoria?.toLowerCase() === 'tortas').length },
+      { id: 'postres', label: '🧁 Postres', count: productos.filter(p => p.categoria?.toLowerCase() === 'postres').length },
+      { id: 'ropa', label: '🛍️ Vestuario / Otros', count: productos.filter(p => p.categoria?.toLowerCase() === 'ropa').length }
+    ].map((cat) => (
+      <button
+        key={cat.id}
+        onClick={() => setCategoria(cat.id)}
+        className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition shadow-sm border ${
+          categoria === cat.id
+            ? 'bg-rose-600 text-white border-rose-600 shadow-rose-200 scale-105'
+            : 'bg-white text-gray-600 border-rose-100 hover:bg-rose-50'
+        }`}
+      >
+        {cat.label} ({cat.count})
+      </button>
+    ))}
+  </div>
+</section>
 
       {/* REJILLA DE PRODUCTOS */}
       <main className="max-w-6xl mx-auto px-4 py-10 w-full">
@@ -244,17 +225,22 @@ function App() {
             >
               <div>
                 <div className="relative overflow-hidden h-56">
-                  <img 
-                    src={prod.imagen} 
-                    alt={prod.nombre} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                  />
-                  {prod.popular && (
-                    <span className="absolute top-3 left-3 bg-gradient-to-r from-amber-500 to-rose-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
-                      ⭐ Destacado
-                    </span>
-                  )}
-                </div>
+  <img
+  src={prod.imagen || 'https://images.unsplash.com/photo-1550617931-e17a7b70dce2?w=500&q=80'}
+  alt={prod.nombre || 'Producto'}
+  onError={(e) => {
+    e.target.onerror = null;
+    e.target.src = 'https://images.unsplash.com/photo-1550617931-e17a7b70dce2?w=500&q=80';
+  }}
+  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+/>
+  /
+  {prod.popular && (
+    <span className="absolute top-3 left-3 bg-gradient-to-r from-amber-500 to-rose-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full">
+      ★ Destacado
+    </span>
+  )}
+</div>
 
                 <div className="p-5">
                   <h3 className="text-lg font-bold text-gray-800 leading-snug group-hover:text-rose-600 transition">
@@ -269,7 +255,9 @@ function App() {
               <div className="p-5 pt-0 border-t border-rose-50/60 mt-2">
                 <div className="mt-4 flex items-center justify-between">
                   <div>
-                    <span className="text-xl font-black text-rose-600">${prod.precio.toLocaleString('es-CL')}</span>
+                    <span className="text-xl font-black text-rose-600">
+  ${Number(prod.precio || 0).toLocaleString('es-CL')}
+</span>
                     <span className="text-[10px] text-rose-500 font-medium block">
                       Abono 50%: ${(prod.precio / 2).toLocaleString('es-CL')}
                     </span>
@@ -488,7 +476,21 @@ function App() {
                   {cart.map((item) => (
                     <div key={item.cartId} className="p-3 bg-rose-50/40 rounded-2xl border border-rose-100 flex items-start justify-between gap-3">
                       <div className="flex gap-3">
-                        <img src={item.imagen} alt={item.nombre} className="w-12 h-12 rounded-xl object-cover" />
+                        <img 
+                              
+  
+  src={item.imagen || 'https://placehold.co/80x80/ffb6c1/800020?text=Cherrys'} 
+  alt={item.nombre} 
+  onError={(e) => {
+    e.target.onerror = null;
+    e.target.src = 'https://placehold.co/80x80/ffb6c1/800020?text=Cherrys';
+  }}
+  className="w-12 h-12 rounded-xl object-cover" 
+/>
+  className="w-full h-48 object-cover rounded-md mb-3"
+/
+  className="w-full h-48 object-cover rounded-md mb-3"
+/
                         <div>
                           <h4 className="font-bold text-xs text-gray-800">{item.nombre}</h4>
                           <span className="text-xs font-black text-rose-600 block">${item.precio.toLocaleString('es-CL')}</span>
@@ -559,6 +561,8 @@ function App() {
       )}
     </div>
   );
+
+  
 }
 
 export default App;

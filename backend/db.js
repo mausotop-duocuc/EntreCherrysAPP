@@ -1,12 +1,16 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+const { createClient } = require('@supabase/supabase-js');
+const path = require('path');
 
-const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'entre_cherrys_db',
-  password: process.env.DB_PASSWORD || 'postgres',
-  port: process.env.DB_PORT || 5432,
-});
+// Asegura cargar el archivo .env ubicado exactamente en la carpeta backend
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-module.exports = pool;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Error: SUPABASE_URL o SUPABASE_KEY no definidos en .env');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+module.exports = supabase;
