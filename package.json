@@ -24,6 +24,9 @@
     "express": "^5.2.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "autoprefixer": "^10.6.1",
+    "nodemon": "^3.1.14",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3"
   }
 }

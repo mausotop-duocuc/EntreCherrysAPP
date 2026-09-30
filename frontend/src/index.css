@@ -2,7 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fuente elegante para el título de la marca */
-.font-brand {
-  font-family: 'Playfair Display', serif;
+body {
+  background-color: #fbf8f3;
+  /* Patrón de puntos/grano ultra tenue */
+  background-image: radial-gradient(#e5d9cc 0.75px, transparent 0.75px);
+  background-size: 16px 16px;
+  background-attachment: fixed;
+  color: #332626;
+  @import "tailwindcss";
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #faf6f0;
+  background-image: 
+    radial-gradient(at 10% 10%, rgba(254, 242, 242, 0.8) 0px, transparent 50%),
+    radial-gradient(at 90% 15%, rgba(254, 243, 199, 0.6) 0px, transparent 50%),
+    radial-gradient(at 50% 85%, rgba(253, 242, 248, 0.7) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: #2d2121;
+}
+
+::selection {
+  background-color: #fbcfe8;
+  color: #831843;
+}
 }
