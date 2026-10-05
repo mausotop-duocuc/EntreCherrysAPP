@@ -1,649 +1,1181 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import SeccionTortas from './SeccionTortas';
 
-// 1. CONEXIÓN A SUPABASE
-const SUPABASE_URL = 'https://tu-proyecto.supabase.co';
-const SUPABASE_ANON_KEY = 'tu-anon-key-aqui';
+// ============================================================================
+// 1. TUS DATOS OFICIALES Y CONFIGURACIÓN (CONSERVA TUS RUTAS, PRECIOS E IG)
+// ============================================================================
 
-let supabase = null;
-try {
-  if (SUPABASE_URL.startsWith('http')) {
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// 👉 Reemplaza con tu usuario oficial de Instagram y número de WhatsApp
+export const INSTAGRAM_HANDLE = '@entrecherrys'; 
+export const NUMERO_WHATSAPP = '56912345678';
+
+// 👉 Tu catálogo de tortas con tus rutas de fotos y precios exactos
+ const TORTAS_CATALOGO = [
+  {
+    id: 'torta-crema-clasica',
+    nombre: 'Torta Crema Clásica & Cerezas',
+    descripcion: 'Cobertura suave en tono menta con rosetones de crema rosa y cerezas frescas en la copa.',
+    precio: 22990,
+    imagen: '/torta crema clasica.jpg',
+    porciones: '10 a 12 porciones',
+    categoria: 'tortas',
+    popular: true
+  },
+  {
+    id: 'torta-cumpleanos-dino',
+    nombre: 'Torta Cumpleaños Dinosaurios',
+    descripcion: 'Torta infantil temática de 3 pisos moldeada con adorables figuras de dinosaurios.',
+    precio: 45000,
+    imagen: '/Torta cumpleaños.jpg',
+    porciones: '25 a 30 porciones',
+    categoria: 'tortas',
+    popular: true
+  },
+  {
+    id: 'torta-cumpleanos-jardin',
+    nombre: 'Torta Cumpleaños Jardín Dulce',
+    descripcion: 'Diseño infantil de 3 pisos en tonos pastel decorado con pajaritos, mariposas y flores.',
+    precio: 45000,
+    imagen: '/Torta cumpleaños 2.jpg',
+    porciones: '25 a 30 porciones',
+    categoria: 'tortas',
+    popular: false
+  },
+  {
+    id: 'torta-eventos-berries',
+    nombre: 'Torta Eventos Chocolate & Berries',
+    descripcion: 'Borde rústico de chocolate artesanal cargada con abundantes frutos rojos frescos.',
+    precio: 32990,
+    imagen: '/torta-eventos.jpg',
+    porciones: '15 a 20 porciones',
+    categoria: 'tortas',
+    popular: true
+  },
+  {
+    id: 'torta-tradicional-drip',
+    nombre: 'Torta Tradicional Manjar Drip',
+    descripcion: 'Clásica torta con chorreado de manjar, rosetones de crema, galletas Oreo y cerezas.',
+    precio: 24990,
+    imagen: '/torta-tradicional.jpg',
+    porciones: '12 a 15 porciones',
+    categoria: 'tortas',
+    popular: false
   }
-} catch (e) {
-  console.warn("Supabase no configurado, utilizando productos locales.");
-}
+];
 
-function App() {
-  const [cart, setCart] = useState([]);
-  const [categoria, setCategoria] = useState('todos');
-  const [busqueda, setBusqueda] = useState('');
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [fechaEntrega, setFechaEntrega] = useState('');
-  const [faqAbierto, setFaqAbierto] = useState(null);
-  const [productos, setProductos] = useState([]);
-  const [cargando, setCargando] = useState(true);
+// 👉 Tu catálogo de amigurumis con tus rutas de fotos y precios exactos
+const RUTA_BASE = typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL ? import.meta.env.BASE_URL : '/';
+ const AMIGURUMIS_CATALOGO = [
+  {
+    id: 'ami-capibara',
+    nombre: 'Amigurumi Capibara',
+    descripcion: 'Tejido a crochet con hilo suave, detalles artesanales.',
+    precio: 14990,
+    imagen: `${RUTA_BASE}amigurumis/Capibara.jpeg`,
+    medida: '20 cm',
+    categoria: 'amigurumis',
+    popular: true
+  },
+  {
+    id: 'ami-oso-pijama',
+    nombre: 'Amigurumi Oso Pijama',
+    descripcion: 'Tierno osito tejido con pijama intercambiable o decorativo.',
+    precio: 16990,
+    imagen: `${RUTA_BASE}amigurumis/oso-pijama.jpeg`,
+    medida: '25 cm',
+    categoria: 'amigurumis',
+    popular: true
+  },
+  {
+    id: 'ami-personalizado',
+    nombre: 'Amigurumi Personalizado',
+    descripcion: 'Muñeco tejido a mano según tus especificaciones de diseño.',
+    precio: 18990,
+    imagen: `${RUTA_BASE}amigurumis/personalizado.jpeg`,
+    medida: '22 cm',
+    categoria: 'amigurumis',
+    popular: false
+  },
+  {
+    id: 'ami-ratita',
+    nombre: 'Amigurumi Ratita',
+    descripcion: 'Llavero o figura pequeña tejida con gran precisión.',
+    precio: 8990,
+    imagen: `${RUTA_BASE}amigurumis/ratita.jpeg`,
+    medida: '12 cm',
+    categoria: 'amigurumis',
+    popular: false
+  },
+  {
+    id: 'ami-vaquita',
+    nombre: 'Amigurumi Vaquita',
+    descripcion: 'Adorable vaquita tejida en hilo hipoalergénico.',
+    precio: 15990,
+    imagen: `${RUTA_BASE}amigurumis/vaquita.jpeg`,
+    medida: '22 cm',
+    categoria: 'amigurumis',
+    popular: true
+  },
+  {
+    id: 'ami-zorro',
+    nombre: 'Amigurumi Zorro',
+    descripcion: 'Simpático zorrito en tonos naranja y blanco.',
+    precio: 14990,
+    imagen: `${RUTA_BASE}amigurumis/zorro.jpeg`,
+    medida: '18 cm',
+    categoria: 'amigurumis',
+    popular: false
+  }
+];
 
-  // CATÁLOGO CON PRECIOS Y OPCIONES ACTUALIZADAS
-  const productosLocales = [
-    {
-      id: 1,
-      nombre: "Amigurumi Capibara",
-      descripcion: "Adorable capibara tejida a crochet con detalle de naranjita en la cabeza.",
-      precio: 9990,
-      categoria: "amigurumi",
-      imagen: "/amigurumis/Amigurumi Capibara.jpeg",
-      popular: true,
-      soloColor: true
-    },
-    {
-      id: 2,
-      nombre: "Amigurumi Oso Pijama",
-      descripcion: "Osito tierno confeccionado a mano con pijama y gorrito tejido de dormir.",
-      precio: 9990,
-      categoria: "amigurumi",
-      imagen: "/amigurumis/Amigurumi oso pijama.jpeg",
-      popular: true,
-      soloColor: true
-    },
-    {
-      id: 3,
-      nombre: "Amigurumi Personalizado",
-      descripcion: "Muñeco tejido totalmente a pedido según fotos, ropa o personajes que elijas.",
-      precio: 13990,
-      categoria: "amigurumi",
-      imagen: "/amigurumis/Amigurumi personalizado.jpeg",
-      popular: true,
-      soloColor: false
-    },
-    {
-      id: 4,
-      nombre: "Amigurumi Llavero Ratita",
-      descripcion: "Llavero compacto de carita de ratita gris con moño rosa hecho a crochet.",
-      precio: 9990,
-      categoria: "amigurumi",
-      imagen: "/amigurumis/Amigurumi Ratita.jpeg",
-      popular: false,
-      soloColor: true
-    },
-    {
-      id: 5,
-      nombre: "Amigurumi Vaquita Velvet",
-      descripcion: "Vaquita super suave en hilo tipo velvet con mantita tejida de accesorio.",
-      precio: 9990,
-      categoria: "amigurumi",
-      imagen: "/amigurumis/Amigurumi vaquita.jpeg",
-      popular: true,
-      soloColor: true
-    },
-    {
-      id: 6,
-      nombre: "Amigurumi Zorro",
-      descripcion: "Zorrito detallado tejido a mano en tonos naranja, blanco y café.",
-      precio: 9990,
-      categoria: "amigurumi",
-      imagen: "/amigurumis/Amigurumi zorro.jpeg",
-      popular: false,
-      soloColor: true
-    },
-    {
-      id: 8,
-      nombre: "Polerón Bordado Artesanal",
-      descripcion: "Polerón personalizado con bordado confeccionado a mano.",
-      precio: 22000,
-      categoria: "ropa",
-      imagen: "/poleron.jpg",
-      soloColor: false
+// Configuración de fondo del banner e imágenes de reserva
+const IMAGEN_BANNER_FONDO = 'https://images.unsplash.com/photo-1535141192574-5d4897c13136?auto=format&fit=crop&w=1600&q=80';
+const IMAGEN_FALLBACK_TORTA = 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80';
+const IMAGEN_FALLBACK_AMIGURUMI = 'https://images.unsplash.com/photo-1563170351-be82bc888aa4?auto=format&fit=crop&w=800&q=80';
+
+// ============================================================================
+// 2. CONFIGURACIÓN SUPABASE
+// ============================================================================
+const obtenerVariableEntorno = (keyVite, keyCRA, fallback) => {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[keyVite]) {
+      return import.meta.env[keyVite];
     }
-  ];
-
-  // CARGA DE PRODUCTOS
-  useEffect(() => {
-    async function cargarProductos() {
-      if (!supabase) {
-        setProductos(productosLocales);
-        setCargando(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase.from('productos').select('*');
-        if (error || !data || data.length === 0) {
-          setProductos(productosLocales);
-        } else {
-          const formateados = data.map(p => ({
-            ...p,
-            opcionesRelleno: p.opciones_relleno || p.opcionesRelleno
-          }));
-          setProductos(formateados);
-        }
-      } catch (err) {
-        console.error("Error al consultar Supabase:", err);
-        setProductos(productosLocales);
-      } finally {
-        setCargando(false);
-      }
+  } catch (e) {}
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env[keyCRA]) {
+      return process.env[keyCRA];
     }
+  } catch (e) {}
+  return fallback;
+};
 
-    cargarProductos();
-  }, []);
+const supabaseUrl = obtenerVariableEntorno(
+  'VITE_SUPABASE_URL',
+  'REACT_APP_SUPABASE_URL',
+  'https://tu-proyecto.supabase.co'
+);
 
-  // ESTADOS Y HANDLERS DE PERSONALIZACIÓN
-  const [productoPersonalizando, setProductoPersonalizando] = useState(null);
-  const [opcionesCustom, setOpcionesCustom] = useState({
-    relleno: '',
-    mensajeTorta: '',
-    colorDetalle: 'Original',
-    accesorio: 'Sin accesorio',
-    notasExtra: ''
-  });
+const supabaseAnonKey = obtenerVariableEntorno(
+  'VITE_SUPABASE_ANON_KEY',
+  'REACT_APP_SUPABASE_ANON_KEY',
+  'tu-anon-key'
+);
 
-  const PHONE_NUMBER = "56912345678"; 
-  const INSTAGRAM_USERNAME = "entrecherrys";
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  const testimonios = [
-    { id: 1, nombre: "Camila R.", comentario: "La torta de cumpleaños quedó hermosa y exquisita. ¡Súper detallistas!", estrellas: 5, producto: "Torta Personalizada" },
-    { id: 2, nombre: "Ignacia M.", comentario: "El amigurumi de regalo llegó precioso y con empaque de regalo muy lindo.", estrellas: 5, producto: "Amigurumi a Pedido" },
-    { id: 3, nombre: "Valentina S.", comentario: "Atención súper amable por WhatsApp y cumplieron con la fecha exacta.", estrellas: 5, producto: "Polerón Bordado" }
-  ];
+// ============================================================================
+// 3. OPCIONES DE PERSONALIZACIÓN DE TORTAS
+// ============================================================================
+export const OPCIONES_TAMAÑO = [
+  { id: '10 personas', nombre: '10 Porciones', precio: 18000 },
+  { id: '15 personas', nombre: '15 Porciones', precio: 25000 },
+  { id: '20 personas', nombre: '20 Porciones', precio: 32000 },
+  { id: '30 personas', nombre: '30 Porciones', precio: 45000 },
+  { id: '50 personas', nombre: '50 Porciones (2 Pisos)', precio: 72000 }
+];
 
-  const preguntasFrecuentes = [
-    { p: "¿Con cuánta anticipación debo pedir?", r: "Aconsejamos reservar con 3-5 días para tortas y 5-7 días para amigurumis o textil." },
-    { p: "¿Cómo se realiza el pago?", r: "Solicitamos el 50% de abono por transferencia para congelar el cupo en agenda." },
-    { p: "¿Dónde entregan?", r: "Ofrecemos retiro presencial y envíos a domicilio previa coordinación." }
-  ];
+export const OPCIONES_BIZCOCHO = [
+  'Vainilla Tradicional',
+  'Chocolate Intenso',
+  'Red Velvet',
+  'Zanahoria & Nueces',
+  'Amapola & Limón',
+  'Bizcocho Mixto'
+];
 
-  const abrirModalPersonalizacion = (prod) => {
-    setProductoPersonalizando(prod);
-    setOpcionesCustom({
-      relleno: prod.opcionesRelleno ? prod.opcionesRelleno[0] : '',
-      mensajeTorta: '',
-      colorDetalle: prod.colorElegido || 'Original',
-      accesorio: prod.accesorioElegido || 'Sin accesorio',
-      notasExtra: prod.detallesPersonalizados || ''
-    });
-  };
+export const OPCIONES_RELLENO = [
+  'Manjar con Lúcuta',
+  'Manjar & Nueces',
+  'Crema Pastelera & Frambuesas',
+  'Ganache de Chocolate & Frutillas',
+  'Crema Chantilly & Durazno',
+  'Nutella & Plátano'
+];
 
-  const confirmarPersonalizacion = () => {
-    if (!productoPersonalizando) return;
-    const productoConDetalles = {
-      ...productoPersonalizando,
-      detallesCustom: { ...opcionesCustom },
-      cartId: Date.now()
-    };
-    setCart([...cart, productoConDetalles]);
-    setToastMessage(`¡${productoPersonalizando.nombre} agregado! 🍒`);
-    setProductoPersonalizando(null);
-    setTimeout(() => setToastMessage(''), 3500);
-  };
+export const OPCIONES_COBERTURA = [
+  'Buttercream de Vainilla Suave',
+  'Merengue Italiano',
+  'Naked Cake (Semi desnuda)',
+  'Ganache de Chocolate',
+  'Fondant Estilizado'
+];
 
-  const eliminarDelCarrito = (cartId) => {
-    setCart(cart.filter(item => item.cartId !== cartId));
-  };
+export const OPCIONES_EXTRAS = [
+  { id: 'flores', nombre: 'Flores Naturales de Estación', precio: 3500 },
+  { id: 'macarons', nombre: 'Topping de Macarons (4 unid)', precio: 4000 },
+  { id: 'topper', nombre: 'Topper Personalizado de Cumpleaños', precio: 2500 },
+  { id: 'velas', nombre: 'Vela Numérica Especial', precio: 1200 }
+];
 
-  const productosFiltrados = productos.filter(p => {
-    const coincideCategoria = categoria === 'todos' || p.categoria?.toLowerCase() === categoria.toLowerCase();
-    const coincideBusqueda = p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || 
-                             p.descripcion?.toLowerCase().includes(busqueda.toLowerCase());
-    return coincideCategoria && coincideBusqueda;
-  });
+// ============================================================================
+// 4. FUNCIONES AUXILIARES
+// ============================================================================
+export const formatearCLP = (monto) => {
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    maximumFractionDigits: 0
+  }).format(monto || 0);
+};
 
-  const totalPrecio = cart.reduce((acc, item) => acc + (Number(item.precio) || 0), 0);
-  const abonoRequerido = totalPrecio * 0.5;
+export const generarCartId = () => {
+  return `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+};
 
-  const enviarPedidoWhatsApp = () => {
-    if (cart.length === 0) return;
-    let mensaje = "¡Hola Entre Cherrys! 🍒 Quisiera agendar la siguiente solicitud:\n\n";
-    cart.forEach((item, index) => {
-      mensaje += `*${index + 1}. ${item.nombre}* - $${Number(item.precio || 0).toLocaleString('es-CL')}\n`;
-      if (item.detallesCustom) {
-        if (item.detallesCustom.relleno) mensaje += `   • Relleno: ${item.detallesCustom.relleno}\n`;
-        if (item.detallesCustom.mensajeTorta) mensaje += `   • Texto/Mensaje: "${item.detallesCustom.mensajeTorta}"\n`;
-        if (item.detallesCustom.colorDetalle) mensaje += `   • Color/Tono: ${item.detallesCustom.colorDetalle}\n`;
-        if (item.detallesCustom.notasExtra) mensaje += `   • Detalle personalizado: ${item.detallesCustom.notasExtra}\n`;
-      }
-    });
-    if (fechaEntrega) mensaje += `\n📅 *Fecha requerida:* ${fechaEntrega}\n`;
-    mensaje += `\n💰 *Total:* $${totalPrecio.toLocaleString('es-CL')}`;
-    mensaje += `\n✨ *Abono 50%:* $${abonoRequerido.toLocaleString('es-CL')}`;
+// ============================================================================
+// 5. BANNER HERO CON IMAGEN DE FONDO
+// ============================================================================
 
-    window.open(`https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(mensaje)}`, '_blank');
-  };
 
+// ============================================================================
+// 6. SECCIÓN AMIGURUMIS
+// ============================================================================
+export function SeccionAmigurumis({ onAgregarAlCarrito }) {
   return (
-    <div className="min-h-screen text-gray-800 flex flex-col justify-between font-sans">
-      {/* HEADER */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-rose-100 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-extrabold text-rose-600 font-serif italic">Entre Cherrys 🍒</span>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <a 
-              href={`https://instagram.com/${INSTAGRAM_USERNAME}`} 
-              target="_blank" 
-              rel="noreferrer" 
-              className="text-gray-500 hover:text-rose-500 text-xs font-semibold hidden sm:block transition"
-            >
-              @{INSTAGRAM_USERNAME}
-            </a>
-            <button 
-              onClick={() => setIsCartOpen(true)}
-              className="bg-rose-500 hover:bg-rose-600 text-white font-medium px-4 py-2 rounded-full shadow-md hover:shadow-lg transition text-sm flex items-center gap-2"
-            >
-              <span>🛒 Mi Pedido</span>
-              {cart.length > 0 && (
-                <span className="bg-white text-rose-600 font-bold text-xs w-5 h-5 rounded-full flex items-center justify-center shadow-inner">
-                  {cart.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="space-y-8">
+      <div className="border-b border-rose-100 pb-6">
+        <span className="text-xs font-bold text-rose-600 uppercase tracking-widest block mb-1">
+          Muñecos Tejidos a Crochet 🧶
+        </span>
+        <h3 className="text-3xl font-serif font-bold text-rose-950 italic">
+          Colección de Amigurumis
+        </h3>
+        <p className="text-xs text-stone-500 mt-1">
+          Diseños elaborados hilo a hilo con materiales hipoalergénicos, perfectos para regalar o acompañar tu torta.
+        </p>
+      </div>
 
-      {/* BANNER PRINCIPAL CON FONDO DE IMAGEN */}
-      <section 
-        className="relative bg-gradient-to-r from-rose-600 via-pink-500 to-rose-400 bg-cover bg-center text-white py-20 px-4 shadow-md"
-        style={{ backgroundImage: "url('/banner-hilos.jpg')" }}
-      >
-        <div className="absolute inset-0 bg-rose-950/40 backdrop-blur-[1px]"></div>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider backdrop-blur-md border border-white/30 inline-block mb-3">
-            Creaciones a Mano & Personalizadas
-          </span>
-          <h1 className="text-3xl md:text-5xl font-black font-serif italic mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.85)]">
-            Dulzura y cariño hechos a mano
-          </h1>
-          <p className="text-rose-100 text-sm md:text-base max-w-xl mx-auto mb-6 font-medium">
-            Amigurumis únicos, repostería artesanal y bordados especiales pensados para regalar o regalonearte.
-          </p>
-
-          <div className="max-w-xl mx-auto bg-white/95 p-1.5 rounded-2xl shadow-xl border border-rose-200">
-            <input 
-              type="text"
-              placeholder="🔍 Buscar por producto, amigurumi, torta..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full px-4 py-2.5 bg-transparent text-gray-800 placeholder-gray-400 rounded-xl text-sm focus:outline-none font-medium"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* FILTROS DE CATEGORÍA */}
-      <section className="max-w-6xl mx-auto px-4 mt-8">
-        <div className="flex flex-wrap justify-center gap-2">
-          {['todos', 'amigurumi', 'tortas', 'ropa'].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategoria(cat)}
-              className={`px-5 py-2 rounded-2xl text-xs font-bold capitalize transition-all border shadow-sm ${
-                categoria === cat 
-                  ? 'bg-rose-600 text-white border-rose-600 shadow-rose-200 shadow-md' 
-                  : 'bg-white text-gray-600 border-rose-100 hover:bg-rose-50 hover:border-rose-200'
-              }`}
-            >
-              {cat === 'todos' ? '✨ Todos los productos' : cat}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* CONTENIDO PRINCIPAL Y CATÁLOGO */}
-      <main className="max-w-6xl mx-auto px-4 py-8 w-full">
-
-        {/* 🍰 1. SECCIÓN DE TORTAS (SE MUESTRA SI LA CATEGORÍA ES 'TODOS' O 'TORTAS') */}
-        {(categoria === 'todos' || categoria === 'tortas') && (
-          <div className="mb-12">
-            <SeccionTortas />
-          </div>
-        )}
-
-        {/* 🧸 2. CATÁLOGO DE AMIGURUMIS Y ROPA (SE MUESTRA CUANDO NO SEA SOLO 'TORTAS') */}
-        {categoria !== 'tortas' && (
-          <>
-            {cargando ? (
-              <div className="text-center text-rose-600 font-medium py-16 flex flex-col items-center gap-2">
-                <span className="animate-spin text-3xl">🍒</span>
-                <p className="text-sm">Cargando creaciones...</p>
-              </div>
-            ) : productosFiltrados.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-3xl border border-rose-100 max-w-md mx-auto p-6">
-                <span className="text-4xl">🔍</span>
-                <p className="text-gray-600 font-bold mt-2">No se encontraron productos</p>
-                <p className="text-gray-400 text-xs mt-1">Prueba buscando con otro término o cambiando la categoría.</p>
-              </div>
-            ) : (
-              <div>
-                {categoria === 'todos' && (
-                  <div className="mb-6">
-                    <h3 className="text-2xl font-bold font-serif text-gray-800">🧸 Amigurumis & Bordados</h3>
-                    <p className="text-gray-500 text-xs">Figuras tejidas a mano y ropa personalizada</p>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {productosFiltrados.map((prod) => (
-                    <div 
-                      key={prod.id} 
-                      className="bg-white rounded-3xl shadow-sm border border-rose-100 overflow-hidden flex flex-col justify-between hover:shadow-md transition-all group"
-                    >
-                      <div>
-                        <div className="relative overflow-hidden h-52 bg-rose-50">
-                          <img 
-                            src={prod.imagen} 
-                            alt={prod.nombre} 
-                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                          />
-                          {prod.popular && (
-                            <span className="absolute top-3 left-3 bg-rose-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
-                              ⭐ Favorito
-                            </span>
-                          )}
-                        </div>
-                        <div className="p-5">
-                          <div className="flex justify-between items-start gap-2">
-                            <h3 className="font-bold text-gray-800 text-base group-hover:text-rose-600 transition">{prod.nombre}</h3>
-                          </div>
-                          <p className="text-gray-500 text-xs mt-1.5 leading-relaxed">{prod.descripcion}</p>
-                        </div>
-                      </div>
-
-                      <div className="p-5 pt-0 flex items-center justify-between mt-2">
-                        <div>
-                          <span className="text-[10px] text-gray-400 font-bold block">PRECIO</span>
-                          <span className="font-black text-rose-600 text-xl">${Number(prod.precio || 0).toLocaleString('es-CL')}</span>
-                        </div>
-                        <button 
-                          onClick={() => abrirModalPersonalizacion(prod)}
-                          className="bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 font-bold px-4 py-2.5 rounded-xl text-xs transition-all shadow-sm"
-                        >
-                          {prod.soloColor ? '🎨 Elegir Color' : '🎨 Personalizar'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* SECCIÓN TESTIMONIOS */}
-        <section className="mt-16 bg-white rounded-3xl p-6 md:p-8 border border-rose-100 shadow-sm">
-          <div className="text-center mb-8">
-            <span className="text-rose-500 font-bold text-xs uppercase tracking-widest">Lo que dicen nuestras clientas</span>
-            <h2 className="text-2xl font-black font-serif italic text-gray-800 mt-1">Experiencias Cherrys 🍒</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {testimonios.map((t) => (
-              <div key={t.id} className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100/60 flex flex-col justify-between">
-                <div>
-                  <div className="flex text-amber-400 text-xs mb-2">
-                    {"★".repeat(t.estrellas)}
-                  </div>
-                  <p className="text-gray-600 text-xs italic">"{t.comentario}"</p>
-                </div>
-                <div className="mt-4 pt-2 border-t border-rose-100/80 flex justify-between items-center">
-                  <span className="font-bold text-gray-800 text-xs">{t.nombre}</span>
-                  <span className="text-[10px] text-rose-500 font-semibold bg-white px-2 py-0.5 rounded-full border border-rose-100">{t.producto}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* SECCIÓN PREGUNTAS FRECUENTES (FAQ) */}
-        <section className="mt-12 max-w-3xl mx-auto">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800">Preguntas Frecuentes 💬</h2>
-          </div>
-          <div className="space-y-3">
-            {preguntasFrecuentes.map((faq, idx) => (
-              <div key={idx} className="bg-white rounded-2xl border border-rose-100 overflow-hidden shadow-sm">
-                <button
-                  onClick={() => setFaqAbierto(faqAbierto === idx ? null : idx)}
-                  className="w-full text-left p-4 font-bold text-xs md:text-sm text-gray-700 flex justify-between items-center hover:bg-rose-50/50 transition"
-                >
-                  <span>{faq.p}</span>
-                  <span className="text-rose-500 text-lg">{faqAbierto === idx ? '−' : '+'}</span>
-                </button>
-                {faqAbierto === idx && (
-                  <div className="p-4 pt-0 text-xs text-gray-500 leading-relaxed border-t border-rose-50 bg-rose-50/20">
-                    {faq.r}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      </main>
-
-      {/* FOOTER */}
-      <footer className="bg-rose-100/60 border-t border-rose-200 py-8 text-center text-gray-600 text-xs mt-12">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div>
-            <p className="font-bold text-rose-600 text-sm italic font-serif">Entre Cherrys 🍒</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">Amigurumis & Repostería Artesanal</p>
-          </div>
-          <p className="text-[11px] text-gray-500">© 2026 Entre Cherrys • Todos los derechos reservados.</p>
-          
-          {/* SECCIÓN DE REDES SOCIALES Y CONTACTO */}
-          <div className="flex items-center justify-center space-x-4 py-2">
-            {/* Botón de WhatsApp */}
-            <a
-              href={`https://wa.me/${PHONE_NUMBER}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full font-semibold transition-all shadow-md hover:scale-105 text-xs"
-            >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z" />
-              </svg>
-              <span>WhatsApp</span>
-            </a>
-
-            {/* Botón de Instagram */}
-            <a
-              href={`https://instagram.com/${INSTAGRAM_USERNAME}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 via-pink-500 to-amber-500 hover:opacity-90 text-white px-4 py-2 rounded-full font-semibold transition-all shadow-md hover:scale-105 text-xs"
-            >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-              </svg>
-              <span>Instagram</span>
-            </a>
-          </div>
-        </div>
-      </footer>
-
-      {/* MODAL PERSONALIZACIÓN DINÁMICO */}
-      {productoPersonalizando && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center pb-3 border-b border-rose-100">
-              <h3 className="font-bold text-gray-800 text-base">
-                {productoPersonalizando.soloColor ? 'Elegir Tono: ' : 'Personalizar: '} 
-                {productoPersonalizando.nombre}
-              </h3>
-              <button onClick={() => setProductoPersonalizando(null)} className="text-gray-400 hover:text-gray-600 font-bold">✕</button>
-            </div>
-
-            <div className="mt-4 space-y-4">
-              {/* CASO 1: MODELOS ESTÁNDAR (SÓLO CAMBIO DE COLOR) */}
-              {productoPersonalizando.soloColor ? (
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Color o Tono Preferido:</label>
-                  <input 
-                    type="text"
-                    placeholder="Ej: Rosa pastel, Celeste, Colores originales..."
-                    value={opcionesCustom.colorDetalle}
-                    onChange={(e) => setOpcionesCustom({...opcionesCustom, colorDetalle: e.target.value})}
-                    className="w-full p-2.5 bg-rose-50/50 border border-rose-200 rounded-xl text-xs focus:outline-none"
-                  />
-                  <p className="text-[11px] text-gray-400 mt-1.5">
-                    * Este modelo tiene un diseño fijo ($9.990). Puedes indicar tu tono de hilo preferido.
-                  </p>
-                </div>
-              ) : (
-                /* CASO 2: PRODUCTO COMPLETAMENTE PERSONALIZABLE */
-                <>
-                  {productoPersonalizando.opcionesRelleno && (
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Selecciona Relleno:</label>
-                      <select 
-                        value={opcionesCustom.relleno}
-                        onChange={(e) => setOpcionesCustom({...opcionesCustom, relleno: e.target.value})}
-                        className="w-full p-2.5 bg-rose-50/50 border border-rose-200 rounded-xl text-xs font-medium focus:outline-none"
-                      >
-                        {productoPersonalizando.opcionesRelleno.map((r, i) => (
-                          <option key={i} value={r}>{r}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Color o Tonos Preferidos:</label>
-                    <input 
-                      type="text"
-                      placeholder="Ej: Tonos pastel, Colores originales..."
-                      value={opcionesCustom.colorDetalle}
-                      onChange={(e) => setOpcionesCustom({...opcionesCustom, colorDetalle: e.target.value})}
-                      className="w-full p-2.5 bg-rose-50/50 border border-rose-200 rounded-xl text-xs focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                      {productoPersonalizando.categoria === 'amigurumi' ? 'Detalles del Personaje / Ropa / Accesorios:' : 'Instrucciones Especiales:'}
-                    </label>
-                    <textarea 
-                      rows="3"
-                      placeholder={productoPersonalizando.categoria === 'amigurumi' ? "Describe aquí la ropa, peinado o personaje a elección..." : "Escribe cualquier instrucción específica..."}
-                      value={opcionesCustom.notasExtra}
-                      onChange={(e) => setOpcionesCustom({...opcionesCustom, notasExtra: e.target.value})}
-                      className="w-full p-2.5 bg-rose-50/50 border border-rose-200 rounded-xl text-xs focus:outline-none"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="flex gap-2 mt-6">
-              <button 
-                onClick={() => setProductoPersonalizando(null)} 
-                className="w-1/2 bg-gray-100 hover:bg-gray-200 py-2.5 rounded-xl text-xs font-bold text-gray-600 transition"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={confirmarPersonalizacion} 
-                className="w-1/2 bg-rose-600 hover:bg-rose-700 text-white py-2.5 rounded-xl text-xs font-bold transition shadow-md"
-              >
-                Añadir al Pedido 🍒
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CARRITO / SIDEBAR DE RESERVA */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-end">
-          <div className="bg-white w-full max-w-md h-full p-6 flex flex-col justify-between shadow-2xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {AMIGURUMIS_CATALOGO.map((item) => (
+          <div 
+            key={item.id}
+            className="bg-white rounded-3xl border border-rose-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between group"
+          >
             <div>
-              <div className="flex justify-between items-center pb-4 border-b border-rose-100">
-                <div>
-                  <h3 className="font-bold text-gray-800 text-base">🛒 Mi Reserva</h3>
-                  <p className="text-[11px] text-gray-400">Revisa tus productos antes de enviar</p>
-                </div>
-                <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
+              <div className="relative h-64 bg-rose-50 overflow-hidden">
+                <img 
+                  src={item.imagen} 
+                  alt={item.nombre} 
+                  onError={(e) => { e.target.onerror = null; e.target.src = IMAGEN_FALLBACK_AMIGURUMI; }}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                {item.popular && (
+                  <span className="absolute top-3 left-3 bg-rose-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                    ⭐ Más Pedido
+                  </span>
+                )}
+                {item.medida && (
+                  <span className="absolute bottom-3 right-3 bg-white/90 text-stone-800 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+                    📏 {item.medida}
+                  </span>
+                )}
               </div>
 
-              {cart.length === 0 ? (
-                <div className="text-center py-12">
-                  <span className="text-4xl">🛒</span>
-                  <p className="text-gray-500 font-bold text-xs mt-2">Tu pedido está vacío</p>
-                  <p className="text-gray-400 text-[11px] mt-1">Navega e incorpora tus productos favoritos.</p>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-3 max-h-[50vh] overflow-y-auto pr-1">
-                  {cart.map((item) => (
-                    <div key={item.cartId} className="p-3 bg-rose-50/60 rounded-2xl border border-rose-100 flex justify-between items-start text-xs">
-                      <div className="pr-2">
-                        <p className="font-bold text-gray-800">{item.nombre}</p>
-                        <p className="text-rose-600 font-black mt-0.5">${Number(item.precio || 0).toLocaleString('es-CL')}</p>
-                        
-                        {item.detallesCustom && (
-                          <div className="mt-1 text-[10px] text-gray-500 space-y-0.5 bg-white/60 p-1.5 rounded-lg border border-rose-100/50">
-                            {item.detallesCustom.relleno && <p>• Relleno: {item.detallesCustom.relleno}</p>}
-                            {item.detallesCustom.colorDetalle && <p>• Color/Tono: {item.detallesCustom.colorDetalle}</p>}
-                            {item.detallesCustom.notasExtra && <p>• Detalle: {item.detallesCustom.notasExtra}</p>}
-                          </div>
-                        )}
-                      </div>
-                      <button 
-                        onClick={() => eliminarDelCarrito(item.cartId)} 
-                        className="text-red-400 hover:text-red-600 font-bold p-1"
-                        title="Eliminar"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="p-5">
+                <h4 className="font-serif font-bold text-stone-800 text-base group-hover:text-rose-600 transition">
+                  {item.nombre}
+                </h4>
+                <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                  {item.descripcion}
+                </p>
+              </div>
             </div>
 
-            {cart.length > 0 && (
-              <div className="border-t border-rose-100 pt-4 space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-600 mb-1">📅 Fecha requerida de entrega/retiro:</label>
-                  <input 
-                    type="date"
-                    value={fechaEntrega}
-                    onChange={(e) => setFechaEntrega(e.target.value)}
-                    className="w-full p-2 bg-rose-50/40 border border-rose-200 rounded-xl text-xs font-medium focus:outline-none"
-                  />
-                </div>
-
-                <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 space-y-1">
-                  <div className="flex justify-between text-xs font-medium text-gray-600">
-                    <span>Total Estimado:</span>
-                    <span className="font-bold text-gray-800">${totalPrecio.toLocaleString('es-CL')}</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-bold text-rose-600">
-                    <span>Abono para Agendar (50%):</span>
-                    <span>${abonoRequerido.toLocaleString('es-CL')}</span>
-                  </div>
-                </div>
-
-                <button 
-                  onClick={enviarPedidoWhatsApp} 
-                  className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-2xl text-xs shadow-lg transition flex items-center justify-center gap-2"
-                >
-                  <span>💬 Agendar Pedido por WhatsApp</span>
-                </button>
-              </div>
-            )}
+            <div className="p-5 pt-0 flex items-center justify-between border-t border-rose-50 mt-2">
+              <span className="font-serif font-bold text-rose-700 text-xl">
+                {formatearCLP(item.precio)}
+              </span>
+              <button
+                onClick={() => onAgregarAlCarrito({
+                  ...item,
+                  cartId: generarCartId(),
+                  cantidad: 1
+                })}
+                className="bg-rose-500 hover:bg-rose-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-md flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>🛒</span>
+                <span>Añadir</span>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* NOTIFICACIÓN TOAST */}
-      {toastMessage && (
-        <div className="fixed top-5 right-5 bg-gray-900/90 text-white px-4 py-2.5 rounded-2xl text-xs font-semibold shadow-2xl z-50">
-          {toastMessage}
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
 
-export default App;
+// ============================================================================
+// 7. SECCIÓN CONTACTO (WHATSAPP & INSTAGRAM OFICIAL)
+// ============================================================================
+// ============================================================================
+// 6. SECCIÓN REDES SOCIALES (ESTILO COZY & ARTESANAL ☕🧶)
+// ============================================================================
+export function SeccionRedesSociales() {
+  const instagramUrl = `https://instagram.com/${INSTAGRAM_HANDLE.replace('@', '')}`;
+
+  return (
+    <section className="relative bg-gradient-to-br from-amber-50/80 via-rose-50/70 to-orange-50/50 rounded-[2.5rem] p-8 md:p-12 border-2 border-dashed border-rose-200/80 shadow-sm overflow-hidden">
+      {/* Luces de fondo suaves para ambiente acogedor */}
+      <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-amber-200/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-rose-200/40 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative z-10 text-center max-w-xl mx-auto space-y-3">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-800 bg-white/80 px-4 py-1.5 rounded-full border border-rose-200/60 shadow-sm backdrop-blur-sm">
+          <span>☕</span> Un rinconcito dulce & artesanal
+        </span>
+        <h3 className="text-3xl md:text-4xl font-serif font-bold text-stone-800 italic">
+          Síguenos e Inicia tu Pedido
+        </h3>
+        <p className="text-xs md:text-sm text-stone-600 leading-relaxed font-light">
+          Cada torta horneada y cada amigurumi tejido lleva un pedacito de nuestro corazón. Escríbenos para acompañar tus momentos especiales. 🧶🍰
+        </p>
+      </div>
+
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+        {/* Tarjeta WhatsApp */}
+        <div className="bg-white/80 backdrop-blur-sm p-7 rounded-3xl border border-amber-100/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 group">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center text-2xl shrink-0 group-hover:scale-105 transition-transform">
+                💬
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
+                  Atención Cercana
+                </span>
+                <h4 className="font-serif font-bold text-stone-800 text-lg mt-0.5">Conversa con nosotros</h4>
+              </div>
+            </div>
+            <p className="text-xs text-stone-500 leading-relaxed pt-1">
+              ¿Tienes una idea en mente, quieres elegir tus sabores o consultar disponibilidad? Tómate un café y escríbenos con toda confianza.
+            </p>
+          </div>
+
+          <a 
+            href={`https://wa.me/${NUMERO_WHATSAPP}?text=¡Hola!%20Quisiera%20hacer%20una%20consulta%20sobre%20las%20tortas%20y%20amigurumis.`}
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="mt-6 w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl text-center shadow-sm hover:shadow transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>💌</span> Hablar por WhatsApp
+          </a>
+        </div>
+
+        {/* Tarjeta Instagram */}
+        <div className="bg-white/80 backdrop-blur-sm p-7 rounded-3xl border border-rose-100/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 group">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center text-2xl shrink-0 group-hover:scale-105 transition-transform">
+                📸
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-100">
+                  {INSTAGRAM_HANDLE}
+                </span>
+                <h4 className="font-serif font-bold text-stone-800 text-lg mt-0.5">Comunidad & Proceso</h4>
+              </div>
+            </div>
+            <p className="text-xs text-stone-500 leading-relaxed pt-1">
+              Mira cómo cobran vida los muñequitos hilo a hilo y conoce el detrás de escena de la decoración de nuestras tortas.
+            </p>
+          </div>
+
+          <a 
+            href={instagramUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="mt-6 w-full py-3.5 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:opacity-95 text-white font-bold text-xs rounded-2xl text-center shadow-sm hover:shadow transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>✨</span> Visitar Instagram
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
+// 8. SECCIÓN TORTAS (CATÁLOGO + CREADOR A LA MEDIDA)
+// ============================================================================
+export function SeccionTortas({ onAgregarAlCarrito }) {
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroSoloPopulares, setFiltroSoloPopulares] = useState(false);
+
+  // Estados Creador
+  const [tamaño, setTamaño] = useState('10 personas');
+  const [bizcocho, setBizcocho] = useState('Vainilla Tradicional');
+  const [relleno1, setRelleno1] = useState('Manjar con Lúcuta');
+  const [relleno2, setRelleno2] = useState('Sin segundo relleno');
+  const [cobertura, setCobertura] = useState('Buttercream de Vainilla Suave');
+  const [mensaje, setMensaje] = useState('');
+  const [extrasSeleccionados, setExtrasSeleccionados] = useState([]);
+  const [mensajeAgregado, setMensajeAgregado] = useState(false);
+
+  const tortasFiltradas = useMemo(() => {
+    return TORTAS_CATALOGO.filter((torta) => {
+      const coincide = torta.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+                       torta.descripcion.toLowerCase().includes(busqueda.toLowerCase());
+      const coincidePopular = filtroSoloPopulares ? torta.popular : true;
+      return coincide && coincidePopular;
+    });
+  }, [busqueda, filtroSoloPopulares]);
+
+  const precioCalculado = useMemo(() => {
+    const objT = OPCIONES_TAMAÑO.find((t) => t.id === tamaño);
+    const base = objT ? objT.precio : 18000;
+    const extraRelleno = relleno2 !== 'Sin segundo relleno' ? 2500 : 0;
+    const extrasCosto = extrasSeleccionados.reduce((acc, id) => {
+      const ex = OPCIONES_EXTRAS.find((e) => e.id === id);
+      return acc + (ex ? ex.precio : 0);
+    }, 0);
+    return base + extraRelleno + extrasCosto;
+  }, [tamaño, relleno2, extrasSeleccionados]);
+
+  const toggleExtra = (id) => {
+    setExtrasSeleccionados((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleAgregarPersonalizada = (e) => {
+    e.preventDefault();
+    const nombresExtras = extrasSeleccionados.map((id) => OPCIONES_EXTRAS.find((e) => e.id === id)?.nombre);
+
+    onAgregarAlCarrito({
+      id: `torta-custom-${generarCartId()}`,
+      cartId: generarCartId(),
+      nombre: `Torta Personalizada (${tamaño})`,
+      precio: precioCalculado,
+      cantidad: 1,
+      categoria: 'tortas',
+      imagen: TORTAS_CATALOGO[0]?.imagen || '/torta crema clasica.jpg',
+      detallesCustom: {
+        tamaño,
+        bizcocho,
+        rellenoPrincipal: relleno1,
+        rellenoSecundario: relleno2,
+        cobertura,
+        mensajeTorta: mensaje,
+        extras: nombresExtras
+      }
+    });
+
+    setMensaje('');
+    setExtrasSeleccionados([]);
+    setMensajeAgregado(true);
+    setTimeout(() => setMensajeAgregado(false), 3000);
+  };
+
+  return (
+    <div className="space-y-16">
+      {/* CATÁLOGO DE TORTAS */}
+      <div>
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 border-b border-rose-100 pb-6">
+          <div>
+            <span className="text-xs font-bold text-rose-600 uppercase tracking-widest block mb-1">
+              Catálogo de Especialidades 🎂
+            </span>
+            <h3 className="text-3xl font-serif font-bold text-rose-950 italic">
+              Tortas Prediseñadas
+            </h3>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <input 
+              type="text"
+              placeholder="Buscar sabor o estilo..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="px-4 py-2 bg-white border border-rose-200 rounded-xl text-xs text-stone-700 focus:outline-none focus:ring-2 focus:ring-rose-300 w-full sm:w-64"
+            />
+            <button
+              onClick={() => setFiltroSoloPopulares(!filtroSoloPopulares)}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                filtroSoloPopulares ? 'bg-rose-500 text-white border-rose-500' : 'bg-white text-rose-700 border-rose-200'
+              }`}
+            >
+              {filtroSoloPopulares ? '⭐ Mostrando Populares' : '⭐ Populares'}
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {tortasFiltradas.map((torta) => (
+            <div 
+              key={torta.id}
+              className="bg-white rounded-3xl border border-rose-100 shadow-sm hover:shadow-xl transition duration-300 overflow-hidden flex flex-col justify-between group"
+            >
+              <div>
+                <div className="relative h-60 bg-rose-50 overflow-hidden">
+                  <img 
+                    src={torta.imagen} 
+                    alt={torta.nombre} 
+                    onError={(e) => { e.target.onerror = null; e.target.src = IMAGEN_FALLBACK_TORTA; }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                  />
+                  {torta.popular && (
+                    <span className="absolute top-3 left-3 bg-rose-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                      ⭐ Favorita
+                    </span>
+                  )}
+                  {torta.porciones && (
+                    <span className="absolute bottom-3 right-3 bg-white/95 text-stone-800 text-[11px] font-bold px-3 py-1 rounded-full shadow-sm">
+                      {torta.porciones}
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-6">
+                  <h4 className="font-serif font-bold text-stone-800 text-lg group-hover:text-rose-600 transition">
+                    {torta.nombre}
+                  </h4>
+                  <p className="text-xs text-stone-500 mt-2 leading-relaxed">{torta.descripcion}</p>
+                </div>
+              </div>
+
+              <div className="p-6 pt-0 flex items-center justify-between border-t border-rose-50 mt-4">
+                <span className="font-serif font-bold text-rose-700 text-2xl">{formatearCLP(torta.precio)}</span>
+                <button
+                  onClick={() => onAgregarAlCarrito({ ...torta, cartId: generarCartId(), cantidad: 1 })}
+                  className="bg-rose-500 hover:bg-rose-600 text-white font-bold px-5 py-2.5 rounded-2xl text-xs transition shadow-md cursor-pointer"
+                >
+                  🛒 Añadir
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CREADOR PERSONALIZADO */}
+      <section className="bg-gradient-to-br from-rose-50 via-amber-50/30 to-pink-50 p-6 md:p-10 rounded-3xl border border-rose-100 shadow-lg">
+        <div className="text-center max-w-xl mx-auto mb-8 space-y-2">
+          <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">Creador a la Medida ✨</span>
+          <h3 className="text-3xl font-serif font-bold text-rose-950 italic">Arma tu Torta Paso a Paso</h3>
+        </div>
+
+        <form onSubmit={handleAgregarPersonalizada} className="bg-white p-6 md:p-8 rounded-2xl border border-rose-100 shadow-sm space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+            <div>
+              <label className="block font-bold text-stone-700 mb-2">1. Porciones 🍰</label>
+              <select value={tamaño} onChange={(e) => setTamaño(e.target.value)} className="w-full p-3 border border-rose-200 rounded-xl">
+                {OPCIONES_TAMAÑO.map((item) => (
+                  <option key={item.id} value={item.id}>{item.nombre} - {formatearCLP(item.precio)}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 mb-2">2. Bizcocho 🧁</label>
+              <select value={bizcocho} onChange={(e) => setBizcocho(e.target.value)} className="w-full p-3 border border-rose-200 rounded-xl">
+                {OPCIONES_BIZCOCHO.map((op) => <option key={op} value={op}>{op}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 mb-2">3. Relleno Principal 🍯</label>
+              <select value={relleno1} onChange={(e) => setRelleno1(e.target.value)} className="w-full p-3 border border-rose-200 rounded-xl">
+                {OPCIONES_RELLENO.map((op) => <option key={op} value={op}>{op}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-bold text-stone-700 mb-2">4. Cobertura 🎨</label>
+              <select value={cobertura} onChange={(e) => setCobertura(e.target.value)} className="w-full p-3 border border-rose-200 rounded-xl">
+                {OPCIONES_COBERTURA.map((op) => <option key={op} value={op}>{op}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="text-xs">
+            <label className="block font-bold text-stone-700 mb-2">Mensaje Escrito en la Torta ✍️</label>
+            <input 
+              type="text" 
+              placeholder='Ej: "¡Feliz Cumpleaños Camila!"'
+              value={mensaje}
+              onChange={(e) => setMensaje(e.target.value)}
+              className="w-full p-3 border border-rose-200 rounded-xl"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-stone-700 mb-3">Extras Opcionales ✨</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              {OPCIONES_EXTRAS.map((extra) => {
+                const sel = extrasSeleccionados.includes(extra.id);
+                return (
+                  <div 
+                    key={extra.id}
+                    onClick={() => toggleExtra(extra.id)}
+                    className={`p-3 rounded-xl border cursor-pointer flex justify-between items-center transition select-none ${
+                      sel ? 'bg-rose-500 text-white border-rose-500' : 'bg-stone-50 border-rose-200 text-stone-700'
+                    }`}
+                  >
+                    <span>{extra.nombre}</span>
+                    <span className="font-bold ml-1">+{formatearCLP(extra.precio)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {mensajeAgregado && (
+            <div className="p-3 bg-emerald-50 text-emerald-800 text-xs text-center font-bold rounded-xl border border-emerald-200">
+              🎉 ¡Torta personalizada agregada al pedido!
+            </div>
+          )}
+
+          <div className="pt-4 border-t border-rose-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+              <span className="text-[10px] text-stone-400 font-bold uppercase block">Total Torta</span>
+              <span className="text-2xl font-serif font-bold text-rose-700">{formatearCLP(precioCalculado)}</span>
+            </div>
+
+            <button 
+              type="submit"
+              className="w-full sm:w-auto px-8 py-3.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
+            >
+              🍒 Añadir Torta al Pedido
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+// ============================================================================
+// 9. MODAL CHECKOUT
+// ============================================================================
+export function ModalCheckout({ carrito, total, onClose, onPedidoExitoso }) {
+  const [nombre, setNombre] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [fechaEntrega, setFechaEntrega] = useState('');
+  const [metodoEntrega, setMetodoEntrega] = useState('retiro');
+  const [direccion, setDireccion] = useState('');
+  const [cargando, setCargando] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!nombre || !telefono || !fechaEntrega) return;
+
+    setCargando(true);
+
+    try {
+      if (supabase && typeof supabase.from === 'function') {
+        await supabase.from('pedidos').insert([{
+          cliente_nombre: nombre,
+          cliente_telefono: telefono,
+          fecha_entrega: fechaEntrega,
+          metodo_entrega: metodoEntrega,
+          direccion_despacho: direccion,
+          monto_total: total,
+          items: carrito,
+          created_at: new Date().toISOString()
+        }]);
+      }
+    } catch (e) {
+      console.warn('Nota Supabase:', e);
+    } finally {
+      let texto = `*¡Hola! Quiero confirmar mi pedido:*%0A%0A`;
+      texto += `👤 *Nombre:* ${encodeURIComponent(nombre)}%0A`;
+      texto += `📞 *Teléfono:* ${encodeURIComponent(telefono)}%0A`;
+      texto += `📅 *Fecha:* ${encodeURIComponent(fechaEntrega)}%0A`;
+      texto += `🚚 *Entrega:* ${metodoEntrega === 'despacho' ? `Despacho: ${encodeURIComponent(direccion)}` : 'Retiro en Local'}%0A%0A`;
+      texto += `🛒 *PRODUCTOS:*%0A`;
+
+      carrito.forEach((item, i) => {
+        texto += `*${i + 1}. ${encodeURIComponent(item.nombre)}* x${item.cantidad || 1} - ${encodeURIComponent(formatearCLP(item.precio))}%0A`;
+      });
+
+      texto += `%0A💰 *TOTAL:* ${encodeURIComponent(formatearCLP(total))}`;
+
+      window.open(`https://wa.me/${NUMERO_WHATSAPP}?text=${texto}`, '_blank');
+      if (onPedidoExitoso) onPedidoExitoso();
+      setCargando(false);
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 font-bold p-2 cursor-pointer">✕</button>
+
+        <h3 className="text-2xl font-serif font-bold text-rose-950 mb-1">Finalizar Pedido 🛍</h3>
+        <p className="text-xs text-stone-500 mb-6">Coordinaremos la entrega vía WhatsApp.</p>
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <div>
+            <label className="block font-bold text-stone-700 mb-1">Nombre Completo *</label>
+            <input 
+              type="text" 
+              required
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Ej: María José"
+              className="w-full px-4 py-2.5 border border-rose-200 rounded-xl"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-bold text-stone-700 mb-1">Teléfono WhatsApp *</label>
+              <input 
+                type="tel" 
+                required
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                placeholder="+56 9 1234 5678"
+                className="w-full px-4 py-2.5 border border-rose-200 rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-stone-700 mb-1">Fecha Entrega *</label>
+              <input 
+                type="date" 
+                required
+                value={fechaEntrega}
+                onChange={(e) => setFechaEntrega(e.target.value)}
+                className="w-full px-4 py-2.5 border border-rose-200 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-stone-700 mb-1">Tipo de Entrega</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setMetodoEntrega('retiro')}
+                className={`py-2 rounded-xl border text-xs font-bold ${
+                  metodoEntrega === 'retiro' ? 'bg-rose-500 text-white border-rose-500' : 'bg-stone-50 border-rose-200'
+                }`}
+              >
+                🏪 Retiro en Local
+              </button>
+              <button
+                type="button"
+                onClick={() => setMetodoEntrega('despacho')}
+                className={`py-2 rounded-xl border text-xs font-bold ${
+                  metodoEntrega === 'despacho' ? 'bg-rose-500 text-white border-rose-500' : 'bg-stone-50 border-rose-200'
+                }`}
+              >
+                🛵 Despacho
+              </button>
+            </div>
+          </div>
+
+          {metodoEntrega === 'despacho' && (
+            <div>
+              <label className="block font-bold text-stone-700 mb-1">Dirección de Despacho</label>
+              <input 
+                type="text" 
+                value={direccion}
+                onChange={(e) => setDireccion(e.target.value)}
+                placeholder="Dirección completa..."
+                className="w-full px-4 py-2.5 border border-rose-200 rounded-xl"
+              />
+            </div>
+          )}
+
+          <div className="pt-4 border-t border-rose-100 flex justify-between items-center">
+            <div>
+              <span className="text-[10px] text-stone-400 font-bold uppercase block">Total</span>
+              <span className="text-xl font-serif font-bold text-rose-700">{formatearCLP(total)}</span>
+            </div>
+
+            <button
+              type="submit"
+              disabled={cargando}
+              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition cursor-pointer"
+            >
+              📲 Enviar a WhatsApp
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// 10. DRAWER DEL CARRITO
+// ============================================================================
+export function CarritoDrawer({ abierto, onClose, carrito, onEliminarItem, onModificarCantidad, onAbrirCheckout }) {
+  if (!abierto) return null;
+  const total = carrito.reduce((sum, item) => sum + (item.precio * (item.cantidad || 1)), 0);
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-hidden">
+      <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
+        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
+          <div className="p-6 border-b border-rose-100 flex items-center justify-between">
+            <h3 className="text-lg font-serif font-bold text-rose-950">🛒 Tu Carrito ({carrito.length})</h3>
+            <button onClick={onClose} className="text-stone-400 font-bold p-2 cursor-pointer">✕</button>
+          </div>
+
+          <div className="p-6 flex-1 overflow-y-auto space-y-4">
+            {carrito.length === 0 ? (
+              <p className="text-center text-xs text-stone-400 py-12">El carrito está vacío.</p>
+            ) : (
+              carrito.map((item) => (
+                <div key={item.cartId} className="p-4 bg-stone-50 rounded-2xl border border-rose-100 flex gap-3 relative">
+                  <img 
+                    src={item.imagen} 
+                    alt={item.nombre} 
+                    onError={(e) => { e.target.onerror = null; e.target.src = IMAGEN_FALLBACK_TORTA; }}
+                    className="w-16 h-16 object-cover rounded-xl bg-rose-100" 
+                  />
+                  <div className="flex-1 text-xs">
+                    <h5 className="font-bold text-stone-800">{item.nombre}</h5>
+                    <p className="text-rose-700 font-bold mt-1">{formatearCLP(item.precio)}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button onClick={() => onModificarCantidad(item.cartId, -1)} className="w-5 h-5 bg-stone-200 rounded font-bold cursor-pointer">-</button>
+                      <span className="font-bold">{item.cantidad || 1}</span>
+                      <button onClick={() => onModificarCantidad(item.cartId, 1)} className="w-5 h-5 bg-stone-200 rounded font-bold cursor-pointer">+</button>
+                    </div>
+                  </div>
+                  <button onClick={() => onEliminarItem(item.cartId)} className="text-stone-400 hover:text-rose-600 font-bold text-xs cursor-pointer">🗑️</button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {carrito.length > 0 && (
+            <div className="p-6 border-t border-rose-100 bg-rose-50/50 space-y-4">
+              <div className="flex justify-between items-center text-sm font-bold text-stone-800">
+                <span>Total Estimado:</span>
+                <span className="text-xl font-serif text-rose-700">{formatearCLP(total)}</span>
+              </div>
+              <button
+                onClick={() => { onClose(); onAbrirCheckout(); }}
+                className="w-full py-3.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold uppercase rounded-xl shadow transition cursor-pointer"
+              >
+                Procesar Pedido ➔
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+// ============================================================================
+// HEADER / BARRA DE NAVEGACIÓN (ESTILO COZY & ARTESANAL ☕🍰🧶)
+// ============================================================================
+export function Header({ totalCarrito = 0, onAbrirCarrito }) {
+  const numeroWhatsapp = typeof NUMERO_WHATSAPP !== 'undefined' ? NUMERO_WHATSAPP : '56912345678';
+
+  return (
+    <header className="sticky top-0 z-50 bg-[#fdfbf7]/90 backdrop-blur-md border-b border-rose-100/80 shadow-sm transition-all">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        
+        {/* Logo & Marca */}
+        <div className="flex items-center gap-3.5 group cursor-pointer">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rose-100 via-amber-100 to-orange-100 border border-rose-200/70 flex items-center justify-center text-2xl shadow-sm group-hover:scale-105 transition-transform">
+            🍰
+          </div>
+
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="font-serif font-bold text-lg md:text-xl text-stone-800 tracking-tight">
+                Pastelería & Tejidos
+              </span>
+              <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-rose-800 bg-rose-100/70 px-2.5 py-0.5 rounded-full border border-rose-200/50">
+                <span>🧶</span> Hecho con amor
+              </span>
+            </div>
+            <span className="text-[10px] md:text-[11px] font-medium tracking-widest uppercase text-amber-800/80 -mt-0.5">
+              Diseño Artesanal & Dulce
+            </span>
+          </div>
+        </div>
+
+        {/* Botones de Acción */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Botón WhatsApp */}
+          <a
+            href={`https://wa.me/${numeroWhatsapp}?text=¡Hola!%20Me%20gustaría%20hacer%20un%20pedido.`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-emerald-50/90 hover:bg-emerald-100/80 text-emerald-800 text-xs font-bold border border-emerald-200/80 shadow-sm transition-all hover:scale-105 cursor-pointer"
+          >
+            <span className="text-sm">💬</span>
+            <span className="hidden sm:inline">WhatsApp</span>
+          </a>
+
+          {/* Botón Carrito */}
+          <button
+            onClick={onAbrirCarrito}
+            className="relative inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-50 to-amber-50 hover:from-rose-100 hover:to-amber-100 text-stone-800 text-xs font-bold border border-rose-200/80 shadow-sm transition-all hover:scale-105 cursor-pointer"
+          >
+            <span className="text-base">🛒</span>
+            <span className="hidden sm:inline font-serif italic text-stone-700">Carrito</span>
+            
+            <span className="flex items-center justify-center min-w-[22px] h-5 px-1.5 text-[11px] font-black text-white bg-rose-500 rounded-full shadow-sm ml-0.5">
+              {totalCarrito}
+            </span>
+          </button>
+        </div>
+
+      </div>
+    </header>
+  );
+}
+// ============================================================================
+// BANNER HERO CON FOTO PERSONALIZADA (ESTILO COZY & ARTESANAL ☕🍰🧶)
+// ============================================================================
+// ============================================================================
+// BANNER HERO CON ROTACIÓN AUTOMÁTICA DE FOTOS (ESTILO POLAROID)
+// ============================================================================
+export function BannerHero() {
+  // 📸 Agrega o quita aquí todas las rutas de fotos de tu catálogo
+  const fotosPortada = [
+    '/amigurumis/Capibara.jpeg',
+    '/tortas/torta-tradicional.jpg',
+    '/amigurumis/oso-pijama.jpeg',
+    '/tortas/torta-eventos.jpg',
+    '/amigurumis/zorro.jpeg',
+    '/tortas/torta crema clasica.jpg',
+    '/amigurumis/vaquita.jpeg',
+    '/tortas/Torta cumpleaños.jpg',
+    '/amigurumis/ratita.jpeg',
+    '/tortas/Torta cumpleaños 2.jpg',
+    '/amigurumis/personalizado.jpeg',
+  ];
+
+  const [indiceFoto, setIndiceFoto] = useState(0);
+
+  // Cambia la foto automáticamente cada 3.5 segundos
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      setIndiceFoto((prev) => (prev + 1) % fotosPortada.length);
+    }, 3500);
+
+    return () => clearInterval(intervalo);
+  }, [fotosPortada.length]);
+
+  const numeroWhatsapp = typeof NUMERO_WHATSAPP !== 'undefined' ? NUMERO_WHATSAPP : '56912345678';
+
+  return (
+    <section className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-amber-50/80 via-rose-50/60 to-orange-50/40 border border-rose-100/80 p-6 md:p-12 shadow-sm my-6">
+      <div className="absolute -top-12 -left-12 w-48 h-48 bg-rose-200/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-amber-200/30 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+        
+        {/* Textos y Botones */}
+        <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
+          <span className="inline-flex items-center gap-2 text-xs font-bold text-rose-800 bg-white/90 px-4 py-1.5 rounded-full border border-rose-200/70 shadow-sm backdrop-blur-sm">
+            <span>✨</span> Hecho a mano & con mucho amor
+          </span>
+          
+          <h1 className="text-3xl md:text-5xl font-serif font-bold text-stone-800 leading-tight">
+            Pastelería dulce & <span className="text-rose-600 italic">amigurumis tejidos</span>
+          </h1>
+          
+          <p className="text-sm md:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto lg:mx-0">
+            Creamos momentos únicos para tus fechas especiales. Cada torta y cada figura tejida está hecha de manera 100% artesanal.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
+            <a
+              href="#catalogo"
+              className="px-6 py-3.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
+            >
+              <span>🍰</span> Explorar Catálogo
+            </a>
+            <a
+              href={`https://wa.me/${numeroWhatsapp}?text=¡Hola!%20Quisiera%20pedir%20una%20cotización%20personalizada.`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3.5 rounded-2xl bg-white hover:bg-rose-50 text-stone-800 font-bold text-xs border border-rose-200 shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <span>💌</span> Cotización Especial
+            </a>
+          </div>
+        </div>
+
+        {/* Marco Polaroid con animación de fotos */}
+        <div className="lg:col-span-5 flex justify-center">
+          <div className="relative group w-full max-w-sm">
+            <div className="absolute -inset-1 bg-gradient-to-r from-rose-200 via-amber-200 to-orange-200 rounded-[2.2rem] blur-md opacity-60 group-hover:opacity-90 transition duration-300" />
+            
+            <div className="relative bg-white p-4 rounded-[2rem] border border-rose-100 shadow-md transform md:rotate-2 group-hover:rotate-0 transition-transform duration-300">
+              <div className="overflow-hidden rounded-2xl aspect-square bg-rose-50 relative">
+                <img
+                  key={indiceFoto}
+                  src={fotosPortada[indiceFoto]}
+                  alt="Entre Cherrys Portada"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-in-out"
+                />
+              </div>
+              <div className="pt-3 pb-1 text-center">
+                <p className="font-serif italic text-xs text-stone-600 font-medium">
+                  Entre Cherrys • Pastelería & Crochet 🍒
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}
+// ============================================================================
+// 11. COMPONENTE PRINCIPAL (APP)
+// ============================================================================
+
+export default function App() {
+  const [pestanaActiva, setPestanaActiva] = useState('todas');
+  const [carrito, setCarrito] = useState([]);
+  const [drawerAbierto, setDrawerAbierto] = useState(false);
+  const [checkoutAbierto, setCheckoutAbierto] = useState(false);
+  const [notificacion, setNotificacion] = useState('');
+
+  const totalCalculado = carrito.reduce(
+    (acc, item) => acc + (item.precio * (item.cantidad || 1)),
+    0
+  );
+
+  const handleAgregarAlCarrito = (producto) => {
+    setCarrito((prev) => {
+      const existe = prev.find((i) => i.id === producto.id);
+      if (existe) {
+        return prev.map((i) =>
+          i.id === producto.id ? { ...i, cantidad: (i.cantidad || 1) + 1 } : i
+        );
+      }
+      return [...prev, { ...producto, cantidad: 1 }];
+    });
+    setNotificacion(`¡${producto.nombre} agregado al carrito!`);
+    setTimeout(() => setNotificacion(''), 3000);
+  };
+
+  const handleEliminarItem = (id) => {
+    setCarrito((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleModificarCantidad = (id, cambio) => {
+    setCarrito((prev) =>
+      prev
+        .map((item) => {
+          if (item.id === id) {
+            const nuevaCantidad = (item.cantidad || 1) + cambio;
+            return nuevaCantidad > 0 ? { ...item, cantidad: nuevaCantidad } : null;
+          }
+          return item;
+        })
+        .filter(Boolean)
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-stone-50 font-sans text-stone-800 antialiased selection:bg-rose-200">
+      
+      {/* NOTIFICACIÓN FLOTANTE */}
+      {notificacion && (
+        <div className="fixed top-5 right-5 z-50 bg-stone-900 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl">
+          ✨ {notificacion}
+        </div>
+      )}
+
+      {/* 1. HEADER COZY */}
+     {/* HEADER EXISTENTE */}
+      <Header 
+        totalCarrito={carrito.reduce((acc, item) => acc + (item.cantidad || 1), 0)} 
+        onAbrirCarrito={() => setDrawerAbierto(true)} 
+      />
+
+      {/* AGREGA SOLO ESTE BLOQUE */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <BannerHero />
+      </div>
+
+      {/* AQUÍ SIGUE TODO TU CÓDIGO ORIGINAL (PESTAÑAS, CATÁLOGO, CARRITO, ETC.) */}
+      /
+
+      {/* NAVEGACIÓN POR PESTAÑAS */}
+      <div id="catalogo" className="max-w-7xl mx-auto px-4 pt-10">
+        <div className="flex justify-center border-b border-rose-100 pb-4 gap-2 sm:gap-4 text-xs font-bold">
+          <button
+            onClick={() => setPestanaActiva('todas')}
+            className={`px-5 py-2.5 rounded-xl transition cursor-pointer ${
+              pestanaActiva === 'todas'
+                ? 'bg-rose-500 text-white shadow-sm'
+                : 'bg-white text-stone-600 hover:bg-rose-50 border border-rose-100'
+            }`}
+          >
+            ✨ Ver Todo
+          </button>
+          <button
+            onClick={() => setPestanaActiva('tortas')}
+            className={`px-5 py-2.5 rounded-xl transition cursor-pointer ${
+              pestanaActiva === 'tortas'
+                ? 'bg-rose-500 text-white shadow-sm'
+                : 'bg-white text-stone-600 hover:bg-rose-50 border border-rose-100'
+            }`}
+          >
+            🍰 Tortas & Pasteles
+          </button>
+          <button
+            onClick={() => setPestanaActiva('amigurumis')}
+            className={`px-5 py-2.5 rounded-xl transition cursor-pointer ${
+              pestanaActiva === 'amigurumis'
+                ? 'bg-rose-500 text-white shadow-sm'
+                : 'bg-white text-stone-600 hover:bg-rose-50 border border-rose-100'
+            }`}
+          >
+            🧶 Amigurumis Tejidos
+          </button>
+        </div>
+      </div>
+
+      {/* CONTENIDO DE SECCIONES */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-20">
+        {(pestanaActiva === 'todas' || pestanaActiva === 'tortas') && (
+          <SeccionTortas onAgregarAlCarrito={handleAgregarAlCarrito} />
+        )}
+
+        {(pestanaActiva === 'todas' || pestanaActiva === 'amigurumis') && (
+          <SeccionAmigurumis onAgregarAlCarrito={handleAgregarAlCarrito} />
+        )}
+
+        <SeccionRedesSociales />
+      </main>
+
+      {/* DRAWER CARRITO */}
+      <CarritoDrawer
+        abierto={drawerAbierto}
+        onClose={() => setDrawerAbierto(false)}
+        carrito={carrito}
+        onEliminarItem={handleEliminarItem}
+        onModificarCantidad={handleModificarCantidad}
+        onAbrirCheckout={() => setCheckoutAbierto(true)}
+      />
+
+      {/* CHECKOUT MODAL */}
+      {checkoutAbierto && (
+        <ModalCheckout
+          carrito={carrito}
+          total={totalCalculado}
+          onClose={() => setCheckoutAbierto(false)}
+          onPedidoExitoso={() => setCarrito([])}
+        />
+      )}
+
+      {/* FOOTER */}
+      <footer className="bg-white border-t border-rose-100 py-10 text-center text-xs text-stone-400 space-y-2 mt-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <p className="font-serif text-sm font-bold text-rose-950">Pastelería & Tejidos Artesanales</p>
+          <p>© {new Date().getFullYear()} Todos los derechos reservados.</p>
+        </div>
+      </footer>
+
+    </div>
+  );
+}
