@@ -70,7 +70,7 @@ const RUTA_BASE = typeof import.meta !== 'undefined' && import.meta.env?.BASE_UR
     id: 'ami-capibara',
     nombre: 'Amigurumi Capibara',
     descripcion: 'Tejido a crochet con hilo suave, detalles artesanales.',
-    precio: 14990,
+    precio: 7990,
     imagen: `${RUTA_BASE}amigurumis/Capibara.jpeg`,
     medida: '20 cm',
     categoria: 'amigurumis',
@@ -80,7 +80,7 @@ const RUTA_BASE = typeof import.meta !== 'undefined' && import.meta.env?.BASE_UR
     id: 'ami-oso-pijama',
     nombre: 'Amigurumi Oso Pijama',
     descripcion: 'Tierno osito tejido con pijama intercambiable o decorativo.',
-    precio: 16990,
+    precio: 7990,
     imagen: `${RUTA_BASE}amigurumis/oso-pijama.jpeg`,
     medida: '25 cm',
     categoria: 'amigurumis',
@@ -90,7 +90,7 @@ const RUTA_BASE = typeof import.meta !== 'undefined' && import.meta.env?.BASE_UR
     id: 'ami-personalizado',
     nombre: 'Amigurumi Personalizado',
     descripcion: 'Muñeco tejido a mano según tus especificaciones de diseño.',
-    precio: 18990,
+    precio: 12990,
     imagen: `${RUTA_BASE}amigurumis/personalizado.jpeg`,
     medida: '22 cm',
     categoria: 'amigurumis',
@@ -100,7 +100,7 @@ const RUTA_BASE = typeof import.meta !== 'undefined' && import.meta.env?.BASE_UR
     id: 'ami-ratita',
     nombre: 'Amigurumi Ratita',
     descripcion: 'Llavero o figura pequeña tejida con gran precisión.',
-    precio: 8990,
+    precio: 5990,
     imagen: `${RUTA_BASE}amigurumis/ratita.jpeg`,
     medida: '12 cm',
     categoria: 'amigurumis',
@@ -110,7 +110,7 @@ const RUTA_BASE = typeof import.meta !== 'undefined' && import.meta.env?.BASE_UR
     id: 'ami-vaquita',
     nombre: 'Amigurumi Vaquita',
     descripcion: 'Adorable vaquita tejida en hilo hipoalergénico.',
-    precio: 15990,
+    precio: 7990,
     imagen: `${RUTA_BASE}amigurumis/vaquita.jpeg`,
     medida: '22 cm',
     categoria: 'amigurumis',
@@ -120,7 +120,7 @@ const RUTA_BASE = typeof import.meta !== 'undefined' && import.meta.env?.BASE_UR
     id: 'ami-zorro',
     nombre: 'Amigurumi Zorro',
     descripcion: 'Simpático zorrito en tonos naranja y blanco.',
-    precio: 14990,
+    precio: 7990,
     imagen: `${RUTA_BASE}amigurumis/zorro.jpeg`,
     medida: '18 cm',
     categoria: 'amigurumis',
@@ -153,13 +153,14 @@ const obtenerVariableEntorno = (keyVite, keyCRA, fallback) => {
 const supabaseUrl = obtenerVariableEntorno(
   'VITE_SUPABASE_URL',
   'REACT_APP_SUPABASE_URL',
-  'https://tu-proyecto.supabase.co'
+  'https://uqrclgophrtkndctgjfn.supabase.co'
 );
 
 const supabaseAnonKey = obtenerVariableEntorno(
   'VITE_SUPABASE_ANON_KEY',
   'REACT_APP_SUPABASE_ANON_KEY',
-  'tu-anon-key'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxcmNsZ29waHJ0a25kY3RnamZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2OTA3NDcsImV4cCI6MjEwNjI2Njc0N30.v79zkRuwfPMoVoTIaQ9YOz3KXUesLyeoFqB9MpCY3QU'
+
 );
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -185,7 +186,7 @@ export const OPCIONES_BIZCOCHO = [
 ];
 
 export const OPCIONES_RELLENO = [
-  'Manjar con Lúcuta',
+  'Manjar con Lúcuma',
   'Manjar & Nueces',
   'Crema Pastelera & Frambuesas',
   'Ganache de Chocolate & Frutillas',
@@ -662,21 +663,37 @@ export function ModalCheckout({ carrito, total, onClose, onPedidoExitoso }) {
 
     setCargando(true);
 
-    try {
+  try {
+      // REGISTRO DE LA COMPRA EN SUPABASE (Tabla: transacciones)
       if (supabase && typeof supabase.from === 'function') {
-        await supabase.from('pedidos').insert([{
-          cliente_nombre: nombre,
-          cliente_telefono: telefono,
-          fecha_entrega: fechaEntrega,
-          metodo_entrega: metodoEntrega,
-          direccion_despacho: direccion,
-          monto_total: total,
-          items: carrito,
-          created_at: new Date().toISOString()
-        }]);
+        const { data, error } = await supabase
+          .from('transacciones')
+          .insert([
+            {
+              cliente_nombre: nombre,
+              cliente_telefono: telefono,
+              monto_total: total,
+              metodo_pago: 'whatsapp',
+              estado: 'pendiente',
+              detalle_pedido: {
+                fecha_entrega: fechaEntrega,
+                metodo_entrega: metodoEntrega,
+                direccion_despacho: direccion,
+                items: carrito
+              }
+            }
+          ])
+          .select();
+
+        if (error) {
+          console.error('❌ Error al guardar en Supabase:', error.message);
+        } else {
+          console.log('✅ Pedido guardado con éxito en Supabase:', data);
+        }
       }
     } catch (e) {
-      console.warn('Nota Supabase:', e);
+      console.warn('⚠️ Excepción al conectar con Supabase:', e);
+    
     } finally {
       let texto = `*¡Hola! Quiero confirmar mi pedido:*%0A%0A`;
       texto += `👤 *Nombre:* ${encodeURIComponent(nombre)}%0A`;
@@ -822,23 +839,41 @@ export function CarritoDrawer({ abierto, onClose, carrito, onEliminarItem, onMod
               <p className="text-center text-xs text-stone-400 py-12">El carrito está vacío.</p>
             ) : (
               carrito.map((item) => (
-                <div key={item.cartId} className="p-4 bg-stone-50 rounded-2xl border border-rose-100 flex gap-3 relative">
-                  <img 
-                    src={item.imagen} 
-                    alt={item.nombre} 
+                <div key={item.cartId || item.id} className="p-4 bg-stone-50 rounded-2xl border border-rose-100 flex gap-3 relative">
+                  <img
+                    src={item.imagen}
+                    alt={item.nombre}
                     onError={(e) => { e.target.onerror = null; e.target.src = IMAGEN_FALLBACK_TORTA; }}
-                    className="w-16 h-16 object-cover rounded-xl bg-rose-100" 
+                    className="w-16 h-16 object-cover rounded-xl bg-rose-100"
                   />
                   <div className="flex-1 text-xs">
-                    <h5 className="font-bold text-stone-800">{item.nombre}</h5>
+                    <h5 className="font-bold text-stone-800 pr-6">{item.nombre}</h5>
                     <p className="text-rose-700 font-bold mt-1">{formatearCLP(item.precio)}</p>
+                    
                     <div className="flex items-center gap-2 mt-2">
-                      <button onClick={() => onModificarCantidad(item.cartId, -1)} className="w-5 h-5 bg-stone-200 rounded font-bold cursor-pointer">-</button>
-                      <span className="font-bold">{item.cantidad || 1}</span>
-                      <button onClick={() => onModificarCantidad(item.cartId, 1)} className="w-5 h-5 bg-stone-200 rounded font-bold cursor-pointer">+</button>
+                      <button
+                        onClick={() => onModificarCantidad(item.cartId || item.id, -1)}
+                        className="w-6 h-6 bg-stone-200 hover:bg-rose-200 text-stone-700 hover:text-rose-800 rounded font-bold cursor-pointer transition-colors flex items-center justify-center"
+                      >
+                        -
+                      </button>
+                      <span className="font-bold px-1">{item.cantidad || 1}</span>
+                      <button
+                        onClick={() => onModificarCantidad(item.cartId || item.id, 1)}
+                        className="w-6 h-6 bg-stone-200 hover:bg-rose-200 text-stone-700 hover:text-rose-800 rounded font-bold cursor-pointer transition-colors flex items-center justify-center"
+                      >
+                        +
+                      </button>
                     </div>
+
+                    <button
+                      onClick={() => onEliminarItem(item.cartId || item.id)}
+                      className="text-stone-400 hover:text-rose-600 font-bold text-xs cursor-pointer absolute top-3 right-3 transition-colors p-1"
+                      title="Eliminar producto"
+                    >
+                      🗑️
+                    </button>
                   </div>
-                  <button onClick={() => onEliminarItem(item.cartId)} className="text-stone-400 hover:text-rose-600 font-bold text-xs cursor-pointer">🗑️</button>
                 </div>
               ))
             )}
@@ -941,7 +976,7 @@ export function BannerHero() {
     '/amigurumis/zorro.jpeg',
     '/tortas/torta crema clasica.jpg',
     '/amigurumis/vaquita.jpeg',
-    '/tortas/Torta cumpleaños.jpg',
+
     '/amigurumis/ratita.jpeg',
     '/tortas/Torta cumpleaños 2.jpg',
     '/amigurumis/personalizado.jpeg',
@@ -1055,16 +1090,17 @@ export default function App() {
     setNotificacion(`¡${producto.nombre} agregado al carrito!`);
     setTimeout(() => setNotificacion(''), 3000);
   };
-
+// Eliminar producto por cartId o id
   const handleEliminarItem = (id) => {
-    setCarrito((prev) => prev.filter((item) => item.id !== id));
+    setCarrito((prev) => prev.filter((item) => (item.cartId || item.id) !== id));
   };
 
+  // Sumar (+1) o Restar (-1) cantidad
   const handleModificarCantidad = (id, cambio) => {
     setCarrito((prev) =>
       prev
         .map((item) => {
-          if (item.id === id) {
+          if ((item.cartId || item.id) === id) {
             const nuevaCantidad = (item.cantidad || 1) + cambio;
             return nuevaCantidad > 0 ? { ...item, cantidad: nuevaCantidad } : null;
           }
@@ -1075,10 +1111,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans text-stone-800 antialiased selection:bg-rose-200">
-      
-      {/* NOTIFICACIÓN FLOTANTE */}
-      {notificacion && (
+<div className="min-h-screen bg-[#FAF0F2] font-sans text-stone-800 antialiased selection:bg-rose-200">      {notificacion && (
         <div className="fixed top-5 right-5 z-50 bg-stone-900 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl">
           ✨ {notificacion}
         </div>
@@ -1097,9 +1130,11 @@ export default function App() {
       </div>
 
       {/* AQUÍ SIGUE TODO TU CÓDIGO ORIGINAL (PESTAÑAS, CATÁLOGO, CARRITO, ETC.) */}
-      /
+      
 
       {/* NAVEGACIÓN POR PESTAÑAS */}
+      
+
       <div id="catalogo" className="max-w-7xl mx-auto px-4 pt-10">
         <div className="flex justify-center border-b border-rose-100 pb-4 gap-2 sm:gap-4 text-xs font-bold">
           <button
@@ -1131,6 +1166,7 @@ export default function App() {
             }`}
           >
             🧶 Amigurumis Tejidos
+         
           </button>
         </div>
       </div>
@@ -1144,9 +1180,62 @@ export default function App() {
         {(pestanaActiva === 'todas' || pestanaActiva === 'amigurumis') && (
           <SeccionAmigurumis onAgregarAlCarrito={handleAgregarAlCarrito} />
         )}
+        {pestanaActiva === 'admin' && <PanelAdmin />}
 
         <SeccionRedesSociales />
       </main>
+      {/* FOOTER NUEVO */}
+<footer className="bg-stone-900 text-stone-300 pt-12 pb-8 mt-20">
+  <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 text-center md:text-left">
+    
+    {/* Columna 1: Marca y Descripción */}
+    <div>
+      <h3 className="text-xl font-extrabold text-white mb-2 flex items-center justify-center md:justify-start gap-2">
+        🍰 Repostería & Amigurumis
+      </h3>
+      <p className="text-xs text-stone-400 leading-relaxed max-w-sm mx-auto md:mx-0">
+        Tortas personalizadas y peluches amigurumis hechos 100% a mano con mucho cariño. ¡Haz tus pedidos con anticipación!
+      </p>
+    </div>
+
+    {/* Columna 2: Contacto */}
+    <div>
+      <h4 className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-3">
+        Contacto & Enlaces
+      </h4>
+      <ul className="space-y-2 text-xs text-stone-400">
+        <li>📍 Envíos y entregas a convenir</li>
+        <li>📲 WhatsApp para consultas directas</li>
+        <li>✨ Diseños personalizados a pedido</li>
+      </ul>
+    </div>
+
+    {/* Columna 3: Acceso Administrativo (Botón Admin) */}
+    <div className="flex flex-col items-center md:items-end justify-center">
+      <p className="text-xs text-stone-500 mb-2">Gestión de Tienda</p>
+      <button
+        onClick={() => {
+          setPestanaActiva('admin');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer border flex items-center gap-2 ${
+          pestanaActiva === 'admin'
+            ? 'bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/30'
+            : 'bg-stone-800 text-stone-300 border-stone-700 hover:bg-rose-500 hover:border-rose-500 hover:text-white'
+        }`}
+      >
+        <span>🔒</span> Admin Pedidos
+      </button>
+    </div>
+
+  </div>
+
+  {/* Línea final de Copyright */}
+  <div className="max-w-7xl mx-auto px-6 pt-6 border-t border-stone-800 flex flex-col sm:flex-row justify-between items-center text-xs text-stone-500 gap-2">
+    <p>© {new Date().getFullYear()} Mi Tienda. Todos los derechos reservados.</p>
+    <p className="text-stone-600">Hecho con ❤️</p>
+  </div>
+</footer>
 
       {/* DRAWER CARRITO */}
       <CarritoDrawer
@@ -1168,14 +1257,239 @@ export default function App() {
         />
       )}
 
-      {/* FOOTER */}
-      <footer className="bg-white border-t border-rose-100 py-10 text-center text-xs text-stone-400 space-y-2 mt-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <p className="font-serif text-sm font-bold text-rose-950">Pastelería & Tejidos Artesanales</p>
-          <p>© {new Date().getFullYear()} Todos los derechos reservados.</p>
-        </div>
-      </footer>
+      
 
+    </div>
+  );
+}
+// ============================================================================
+// PANEL DE ADMINISTRACIÓN (GESTIÓN DE PEDIDOS DESDE SUPABASE)
+// ============================================================================
+export function PanelAdmin() {
+  const [autenticado, setAutenticado] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [errorPin, setErrorPin] = useState(false);
+  
+  const [pedidos, setPedidos] = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [filtro, setFiltro] = useState('todos');
+
+  // Clave secreta para acceder al panel (puedes cambiarla aquí)
+  const CLAVE_ADMIN = '1234';
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (pinInput === CLAVE_ADMIN) {
+      setAutenticado(true);
+      setErrorPin(false);
+      cargarPedidos();
+    } else {
+      setErrorPin(true);
+    }
+  };
+
+  const cargarPedidos = async () => {
+    setCargando(true);
+    try {
+      if (supabase && typeof supabase.from === 'function') {
+        const { data, error } = await supabase
+          .from('transacciones')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error al cargar pedidos:', error.message);
+        } else {
+          setPedidos(data || []);
+        }
+      }
+    } catch (e) {
+      console.error('Excepción al cargar pedidos:', e);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const actualizarEstado = async (id, nuevoEstado) => {
+    try {
+      const { error } = await supabase
+        .from('transacciones')
+        .update({ estado: nuevoEstado })
+        .eq('id', id);
+
+      if (error) {
+        alert('Error al actualizar el estado');
+      } else {
+        // Actualizar el estado localmente
+        setPedidos(pedidos.map(p => p.id === id ? { ...p, estado: nuevoEstado } : p));
+      }
+    } catch (e) {
+      console.error('Error actualizando estado:', e);
+    }
+  };
+
+  // PANTALLA DE BLOQUEO POR PIN
+  if (!autenticado) {
+    return (
+      <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-3xl shadow-xl border border-rose-100 text-center">
+        <div className="text-4xl mb-3">🔐</div>
+        <h2 className="text-2xl font-serif font-bold text-rose-950 mb-2">Panel de Administración</h2>
+        <p className="text-xs text-stone-500 mb-6">Ingresa la clave de acceso para ver las ventas.</p>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <input
+            type="password"
+            value={pinInput}
+            onChange={(e) => setPinInput(e.target.value)}
+            placeholder="Clave de acceso (ej: 1234)"
+            className="w-full px-4 py-3 border border-rose-200 rounded-xl text-center text-lg font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-rose-400"
+          />
+          {errorPin && <p className="text-xs text-red-500 font-bold">Clave incorrecta. Intenta de nuevo.</p>}
+
+          <button
+            type="submit"
+            className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition cursor-pointer shadow-md"
+          >
+            Ingresar al Panel
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // FILTRADO DE PEDIDOS
+  const pedidosFiltrados = pedidos.filter(p => {
+    if (filtro === 'todos') return true;
+    return p.estado === filtro;
+  });
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* CABECERA Y FILTROS */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h2 className="text-2xl font-serif font-bold text-rose-950">Gestión de Pedidos 📋</h2>
+          <p className="text-xs text-stone-500">Revisa y administra las compras registradas en Supabase.</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={cargarPedidos}
+            disabled={cargando}
+            className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer"
+          >
+            🔄 {cargando ? 'Cargando...' : 'Actualizar'}
+          </button>
+
+          <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-bold">
+            {['todos', 'pendiente', 'completado', 'cancelado'].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFiltro(f)}
+                className={`px-3 py-1.5 rounded-lg capitalize transition ${
+                  filtro === f ? 'bg-white shadow text-rose-600' : 'text-stone-500'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* LISTA DE PEDIDOS */}
+      {cargando ? (
+        <div className="text-center py-12 text-stone-400 text-sm">Cargando transacciones de Supabase...</div>
+      ) : pedidosFiltrados.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-3xl border border-dashed border-rose-200 text-stone-400 text-sm">
+          No hay pedidos registrados en esta categoría.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {pedidosFiltrados.map((pedido) => {
+            const detalle = pedido.detalle_pedido || {};
+            const items = detalle.items || [];
+            
+            // Colores según estado
+            const colorEstado = {
+              pendiente: 'bg-amber-100 text-amber-800 border-amber-300',
+              completado: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+              cancelado: 'bg-rose-100 text-rose-800 border-rose-300'
+            }[pedido.estado] || 'bg-stone-100 text-stone-700';
+
+            return (
+              <div key={pedido.id} className="bg-white rounded-3xl p-6 shadow-md border border-rose-100 flex flex-col justify-between">
+                <div>
+                  {/* HEADER CARD */}
+                  <div className="flex items-start justify-between mb-3 pb-3 border-b border-stone-100">
+                    <div>
+                      <span className="text-[10px] text-stone-400 font-bold block">ID #{pedido.id}</span>
+                      <h3 className="font-bold text-stone-800 text-base">{pedido.cliente_nombre}</h3>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border uppercase ${colorEstado}`}>
+                      {pedido.estado}
+                    </span>
+                  </div>
+
+                  {/* DATOS DE CONTACTO Y ENTREGA */}
+                  <div className="space-y-1.5 text-xs text-stone-600 mb-4">
+                    <p className="flex items-center gap-1.5">
+                      📞 <a href={`https://wa.me/${pedido.cliente_telefono}`} target="_blank" rel="noreferrer" className="text-emerald-600 underline font-bold">
+                        {pedido.cliente_telefono}
+                      </a>
+                    </p>
+                    <p>📅 <b>Fecha entrega:</b> {detalle.fecha_entrega || 'No especificada'}</p>
+                    <p>🚚 <b>Tipo:</b> {detalle.metodo_entrega === 'despacho' ? `Despacho (${detalle.direccion_despacho || 'Sin dirección'})` : 'Retiro en local'}</p>
+                    <p className="text-[10px] text-stone-400">🕒 {new Date(pedido.created_at).toLocaleString('es-CL')}</p>
+                  </div>
+
+                  {/* PRODUCTOS */}
+                  <div className="bg-stone-50 rounded-2xl p-3 mb-4 border border-stone-100">
+                    <span className="text-[10px] font-bold text-stone-400 uppercase block mb-2">Productos Comprados</span>
+                    <ul className="space-y-1 text-xs text-stone-700">
+                      {items.map((item, idx) => (
+                        <li key={idx} className="flex justify-between items-center">
+                          <span>{item.nombre} x{item.cantidad || 1}</span>
+                          <span className="font-bold">{formatearCLP(item.precio)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* FOOTER CARD (TOTAL Y ACCIONES) */}
+                <div className="pt-3 border-t border-stone-100">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-xs text-stone-500 font-bold">Total Pedido:</span>
+                    <span className="text-lg font-serif font-bold text-rose-700">{formatearCLP(pedido.monto_total)}</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-1.5 text-[11px] font-bold">
+                    <button
+                      onClick={() => actualizarEstado(pedido.id, 'pendiente')}
+                      className="py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl border border-amber-200 transition cursor-pointer"
+                    >
+                      Pendiente
+                    </button>
+                    <button
+                      onClick={() => actualizarEstado(pedido.id, 'completado')}
+                      className="py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 transition cursor-pointer"
+                    >
+                      Completado
+                    </button>
+                    <button
+                      onClick={() => actualizarEstado(pedido.id, 'cancelado')}
+                      className="py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl border border-rose-200 transition cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
